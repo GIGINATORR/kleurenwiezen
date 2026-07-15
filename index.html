@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Kleurenwiezen — puntenteller</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kleurenwiezen">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#143528">
+<style>
+  :root{
+    --groen-diep:#143528; --groen:#1c4a39; --groen-rand:#2c6149;
+    --ivoor:#f6f1e3; --ivoor-zacht:#efe7d2; --inkt:#211f1a; --inkt-zacht:#5b5648;
+    --rood:#b32e2c; --goud:#c9a227; --goud-zacht:#e3c969;
+    --k0:#b32e2c; --k1:#c9a227; --k2:#1c6b3f; --k3:#2c5d8f;
+    --schaduw:0 10px 30px rgba(0,0,0,.35);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{font-family:var(--sans);color:var(--ivoor);
+    background:radial-gradient(120% 80% at 50% -10%, #1f5340 0%, var(--groen) 45%, var(--groen-diep) 100%);
+    min-height:100dvh;padding:env(safe-area-inset-top) 14px calc(env(safe-area-inset-bottom) + 24px);
+    max-width:680px;margin:0 auto;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:18px 2px 12px}
+  .titel{font-family:var(--serif);font-size:1.55rem;line-height:1}
+  .titel .suits{font-size:.85em;letter-spacing:-.05em;margin-right:.35em}
+  .titel .rood{color:var(--goud-zacht)}
+  .titel small{display:block;font-family:var(--sans);font-size:.62rem;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--goud-zacht);margin-top:6px;font-weight:600}
+  .kop-knoppen{display:flex;gap:8px}
+  .iconknop{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--ivoor);
+    width:42px;height:42px;border-radius:12px;font-size:1.15rem;cursor:pointer}
+  .iconknop:active{transform:scale(.95)}
+
+  .bord{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 22px}
+  .seat{position:relative;background:linear-gradient(165deg,var(--groen) 0%,#16402f 100%);
+    border:1px solid var(--groen-rand);border-radius:16px;padding:13px 14px 12px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
+  .seat.leider{border-color:var(--goud);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(201,162,39,.35)}
+  .seat .naam{font-size:.82rem;font-weight:600;color:var(--ivoor-zacht);display:flex;align-items:center;gap:6px;
+    overflow:hidden;white-space:nowrap}
+  .seat .naam .stipje{width:8px;height:8px;border-radius:50%;flex:none}
+  .seat .naam span.tekst{overflow:hidden;text-overflow:ellipsis}
+  .seat .kroon{color:var(--goud);font-size:.9rem;flex:none}
+  .seat .score{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:2.5rem;line-height:1.05;margin-top:2px}
+  .seat .score.neg{color:#f0a3a0}
+  .seat .laatste{position:absolute;top:12px;right:12px;font-size:.72rem;font-variant-numeric:tabular-nums;
+    background:var(--ivoor);border-radius:20px;padding:2px 7px;font-weight:700}
+  .seat .laatste.plus{color:#1c6b3f}.seat .laatste.min{color:var(--rood)}.seat .laatste.nul{color:var(--inkt-zacht)}
+  .seat .deelt{position:absolute;bottom:11px;right:12px;font-size:.62rem;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--goud-zacht);border:1px solid rgba(201,162,39,.5);border-radius:20px;padding:2px 8px}
+
+  .kaart{background:var(--ivoor);color:var(--inkt);border-radius:18px;padding:16px;margin-bottom:18px;box-shadow:var(--schaduw)}
+  .kaart h2{font-family:var(--serif);font-size:1.05rem;margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .kaart h2 .merk{color:var(--rood);font-size:1.1em}
+  label.veld{display:block;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--inkt-zacht);margin:0 0 7px}
+  .blok{margin-top:16px}.blok.verborgen{display:none}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{flex:1 1 auto;min-width:calc(50% - 4px);text-align:center;border:1.5px solid #d8cfb8;background:#fff;
+    color:var(--inkt);border-radius:11px;padding:11px 8px;font-size:.9rem;font-weight:600;cursor:pointer;
+    transition:border-color .12s,background .12s}
+  .chip:active{transform:scale(.98)}
+  .chip.aan{border-color:var(--groen);background:var(--groen);color:#fff}
+  .chip.spelerchip.aan{border-color:var(--rood);background:var(--rood)}
+  .chip .sub{display:block;font-size:.66rem;font-weight:500;opacity:.7;margin-top:2px}
+  .chip.aan .sub{opacity:.85}
+  .spelers-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mini{display:flex;flex-wrap:wrap;gap:7px}
+  .mini .chip{min-width:0;flex:0 0 auto;width:52px;padding:9px 0;font-size:1rem}
+  .hint{font-size:.78rem;color:var(--inkt-zacht);margin:9px 0 0}
+
+  .stepper{display:flex;align-items:center;gap:14px;justify-content:center;margin-top:2px}
+  .stepper button{width:54px;height:54px;border-radius:14px;border:1.5px solid #d8cfb8;background:#fff;
+    font-size:1.6rem;font-weight:700;color:var(--inkt);cursor:pointer;line-height:1}
+  .stepper button:active{transform:scale(.94)}
+  .stepper button:disabled{opacity:.35}
+  .stepper .telling{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:2.6rem;min-width:78px;text-align:center}
+
+  .tweekeuze{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tweekeuze .chip.aan.ja{border-color:#1c6b3f;background:#1c6b3f}
+  .tweekeuze .chip.aan.nee{border-color:var(--rood);background:var(--rood)}
+
+  .bewerk-balk{display:none;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;
+    background:#fbf2d4;border:1px solid var(--goud);border-radius:11px;padding:9px 13px;font-size:.83rem;color:#7a5e12}
+  .bewerk-balk.toon{display:flex}
+  .bewerk-balk button{background:none;border:none;color:var(--rood);font-weight:700;font-size:.85rem;cursor:pointer;flex:none}
+
+  .preview{margin-top:14px;background:var(--ivoor-zacht);border-radius:12px;padding:11px 13px;font-size:.85rem;display:none}
+  .preview.toon{display:block}
+  .preview .kop{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--inkt-zacht);margin-bottom:6px}
+  .preview .rij{display:flex;justify-content:space-between;padding:3px 0;font-variant-numeric:tabular-nums}
+  .preview .p{color:#1c6b3f;font-weight:700}.preview .m{color:var(--rood);font-weight:700}.preview .n{color:var(--inkt-zacht);font-weight:700}
+
+  .knop-primair{width:100%;margin-top:14px;border:none;border-radius:13px;padding:15px;font-size:1rem;font-weight:700;
+    background:var(--groen);color:#fff;cursor:pointer}
+  .knop-primair:disabled{background:#c4bca6;cursor:not-allowed}
+  .knop-primair:active:not(:disabled){transform:scale(.99)}
+
+  /* grafiek */
+  #grafiek-kaart{display:none}
+  #grafiek-kaart.toon{display:block}
+  #grafiek{width:100%;height:auto;display:block}
+  .legende{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}
+  .legende span{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--inkt-zacht)}
+  .legende i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  .rondes-leeg{font-size:.85rem;color:var(--inkt-zacht);text-align:center;padding:8px 0}
+  .ronde{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #e6ddc6}
+  .ronde:first-of-type{border-top:none}
+  .ronde .nr{font-family:var(--serif);font-size:1.1rem;color:var(--inkt-zacht);min-width:24px;font-variant-numeric:tabular-nums}
+  .ronde .info{flex:1;min-width:0}
+  .ronde .info .spel{font-weight:600;font-size:.9rem}
+  .ronde .info .detail{font-size:.76rem;color:var(--inkt-zacht);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ronde .delta{font-variant-numeric:tabular-nums;font-size:.8rem;text-align:right;white-space:nowrap}
+  .ronde .delta .p{color:#1c6b3f}.ronde .delta .m{color:var(--rood)}
+  .ronde .wis,.ronde .bew{background:none;border:none;color:#c0b69d;font-size:1.05rem;cursor:pointer;padding:4px}
+  .ronde .wis:active{color:var(--rood)}.ronde .bew:active{color:var(--groen)}
+
+  .overlay{position:fixed;inset:0;background:rgba(8,20,15,.6);backdrop-filter:blur(3px);display:none;
+    align-items:flex-end;justify-content:center;z-index:50}
+  .overlay.open{display:flex}
+  .overlay.midden{align-items:center;padding:16px}
+  .blad{background:var(--ivoor);color:var(--inkt);width:100%;max-width:680px;max-height:88dvh;overflow-y:auto;
+    border-radius:20px 20px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 22px)}
+  .blad h2{font-family:var(--serif);margin:2px 0 16px;font-size:1.2rem;display:flex;justify-content:space-between;align-items:center}
+  .blad h3{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--inkt-zacht);margin:22px 0 10px}
+  .naamrij{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .naamrij .stip{width:10px;height:10px;border-radius:50%;flex:none}
+  input[type=text]{font-family:var(--sans);font-size:1rem;padding:11px 12px;border:1.5px solid #d8cfb8;
+    border-radius:10px;background:#fff;color:var(--inkt);width:100%}
+  input:focus{outline:2px solid var(--groen);border-color:var(--groen)}
+  .optie{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid #e6ddc6}
+  .optie:first-of-type{border-top:none}
+  .optie .lbl{font-size:.92rem}.optie .lbl small{display:block;color:var(--inkt-zacht);font-size:.76rem;margin-top:2px}
+  .schakel{flex:none;width:52px;height:30px;border-radius:30px;border:none;background:#cdc3a9;position:relative;cursor:pointer;transition:background .15s}
+  .schakel.aan{background:#1c6b3f}
+  .schakel::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+  .schakel.aan::after{left:25px}
+  .segment{display:flex;border:1.5px solid #d8cfb8;border-radius:10px;overflow:hidden;flex:none}
+  .segment button{border:none;background:#fff;color:var(--inkt);padding:8px 14px;font-size:.9rem;font-weight:600;cursor:pointer}
+  .segment button.aan{background:var(--groen);color:#fff}
+  .deler-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .knop-secundair{width:100%;border:1.5px solid #d8cfb8;background:#fff;color:var(--inkt);border-radius:12px;
+    padding:13px;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:6px}
+  .knop-gevaar{border-color:#e3b3b1;color:var(--rood)}
+  .sluit{background:none;border:none;font-size:1.4rem;color:var(--inkt-zacht);cursor:pointer;line-height:1}
+  .dialoog{background:var(--ivoor);color:var(--inkt);width:100%;max-width:340px;border-radius:16px;padding:20px;box-shadow:var(--schaduw)}
+  .dialoog p{margin:0 0 18px;font-size:.95rem;line-height:1.45}
+  .dialoog .knoppen{display:flex;gap:10px}
+  .dialoog .knoppen button{flex:1;border-radius:10px;padding:12px;font-size:.95rem;font-weight:600;cursor:pointer;border:1.5px solid #d8cfb8;background:#fff;color:var(--inkt)}
+  .dialoog .knoppen button.bevestig{border:none;background:var(--rood);color:#fff}
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%) translateY(20px);
+    background:var(--inkt);color:var(--ivoor);border-radius:12px;padding:10px 18px;font-size:.85rem;opacity:0;
+    pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;white-space:nowrap}
+  .toast.toon{opacity:1;transform:translateX(-50%) translateY(0)}
+  .voet{text-align:center;font-size:.7rem;color:rgba(246,241,227,.45);margin-top:4px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="titel">
+    <span class="suits"><span>♠</span><span class="rood">♥</span><span class="rood">♦</span><span>♣</span></span>Kleurenwiezen
+    <small>Whisthub-telling</small>
+  </div>
+  <div class="kop-knoppen">
+    <button class="iconknop" id="btn-deel" aria-label="Stand delen">⇪</button>
+    <button class="iconknop" id="btn-instel" aria-label="Instellingen">⚙</button>
+  </div>
+</header>
+
+<section class="bord" id="bord"></section>
+
+<section class="kaart">
+  <h2><span class="merk">♦</span> <span id="ronde-titel">Nieuwe ronde</span></h2>
+
+  <label class="veld">Welk spel?</label>
+  <div class="chips" id="spel-keuze"></div>
+
+  <div class="blok" id="blok-spelers">
+    <label class="veld" id="spelers-label">Wie speelt?</label>
+    <div class="spelers-grid chips" id="spelers-keuze"></div>
+    <p class="hint" id="spelers-hint"></p>
+  </div>
+
+  <div class="blok" id="blok-bod">
+    <label class="veld" id="bod-label">Geboden slagen</label>
+    <div class="mini" id="bod-keuze"></div>
+  </div>
+
+  <div class="blok" id="blok-behaald">
+    <label class="veld">Behaalde slagen</label>
+    <div class="stepper">
+      <button id="min-slag" aria-label="Minder">−</button>
+      <div class="telling" id="slag-telling">0</div>
+      <button id="plus-slag" aria-label="Meer">+</button>
+    </div>
+  </div>
+
+  <div class="blok verborgen" id="blok-gelukt">
+    <label class="veld" id="gelukt-label">Gelukt?</label>
+    <div class="tweekeuze">
+      <button class="chip ja"  id="btn-ja">Gelukt</button>
+      <button class="chip nee" id="btn-nee">Niet gelukt</button>
+    </div>
+  </div>
+
+  <div class="bewerk-balk" id="bewerk-balk"><span id="bewerk-tekst"></span><button id="btn-annuleer-bewerk">Annuleren</button></div>
+  <div class="preview" id="preview"></div>
+  <button class="knop-primair" id="btn-opslaan" disabled>Ronde opslaan</button>
+</section>
+
+<section class="kaart" id="grafiek-kaart">
+  <h2><span class="merk">♥</span> Scoreverloop</h2>
+  <svg id="grafiek" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Scoreverloop per ronde"></svg>
+  <div class="legende" id="legende"></div>
+</section>
+
+<section class="kaart">
+  <h2><span class="merk">♣</span> Rondes</h2>
+  <div id="rondes"></div>
+</section>
+
+<p class="voet">Werkt offline · scores blijven bewaard op dit toestel</p>
+
+<div class="overlay" id="overlay">
+  <div class="blad">
+    <h2>Instellingen <button class="sluit" id="btn-sluit">✕</button></h2>
+
+    <h3>Spelersnamen</h3>
+    <div id="namen"></div>
+
+    <h3>Wie deelt de volgende ronde?</h3>
+    <div class="deler-grid chips" id="deler-keuze"></div>
+    <p class="hint">De deler schuift na elke ronde automatisch één plaats op.</p>
+
+    <h3>Spelregels</h3>
+    <div class="optie">
+      <div class="lbl">Alleen gaan vanaf<small>Minimum aantal slagen om alleen te spelen</small></div>
+      <div class="segment" id="seg-alleen">
+        <button data-v="5">5</button><button data-v="6">6</button>
+      </div>
+    </div>
+    <div class="optie">
+      <div class="lbl">Kleine miserie<small>Verlies alle 12 slagen na wegleggen</small></div>
+      <button class="schakel" id="sw-kleinemis" aria-label="Kleine miserie"></button>
+    </div>
+    <div class="optie">
+      <div class="lbl">Piccolo<small>Win precies 1 slag</small></div>
+      <button class="schakel" id="sw-piccolo" aria-label="Piccolo"></button>
+    </div>
+    <div class="optie">
+      <div class="lbl">Troel<small>Verplicht spel bij 3 of 4 azen</small></div>
+      <button class="schakel" id="sw-troel" aria-label="Troel"></button>
+    </div>
+
+    <h3>Beheer</h3>
+    <button class="knop-secundair" id="btn-deel2">Stand delen of kopiëren</button>
+    <button class="knop-secundair knop-gevaar" id="btn-nieuw-spel">Alles wissen &amp; nieuw spel</button>
+    <p class="hint">Puntentelling volgt het officiële Whisthub-rooster en is vast.</p>
+  </div>
+</div>
+
+<div class="overlay midden" id="confirm-overlay">
+  <div class="dialoog">
+    <p id="confirm-tekst"></p>
+    <div class="knoppen">
+      <button id="confirm-nee">Annuleren</button>
+      <button class="bevestig" id="confirm-ja">Bevestigen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ===== Whisthub puntentabel ===== */
+const P = {
+  samen:{8:8,9:11,10:14,11:17,12:20,13:30}, samenU:3,
+  solo:{5:3,6:4,7:5,8:7}, soloOver:1, soloU:1,
+  abond:{9:10,10:15,11:20,12:30,13:30},
+  kleinemis:6, piccolo:8, grotemis:12, openmis:24, troel:16, troel13:30, soloslim:60
+};
+
+/* ===== contracten ===== */
+const C = {
+  vragen:   {label:"Vragen",        sub:"samen",  type:"samen",     spelers:2, bod:[8,13]},
+  alleen:   {label:"Alleen",        sub:"solo",   type:"solo",      spelers:1, bod:[5,8]},
+  kleinemis:{label:"Kleine miserie",sub:"0 van 12",type:"kleinemis",spelers:1, optie:"kleinemis"},
+  piccolo:  {label:"Piccolo",       sub:"net 1",  type:"piccolo",   spelers:1, optie:"piccolo"},
+  abondance:{label:"Abondance",     sub:"9-12",   type:"abondance", spelers:1, bod:[9,12]},
+  troel:    {label:"Troel",         sub:"samen",  type:"troel",     spelers:2, optie:"troel"},
+  grotemis: {label:"Grote miserie", sub:"0 van 13",type:"grotemis", spelers:1},
+  openmis:  {label:"Open miserie",  sub:"open",   type:"openmis",   spelers:1},
+  soloslim: {label:"Solo slim",     sub:"alle 13",type:"soloslim",  spelers:1},
+  pas:      {label:"Pas",           sub:"herdelen",type:"pas",      spelers:0}
+};
+const GELUKT_TYPES = ["kleinemis","piccolo","grotemis","openmis","soloslim"];
+const KLEUREN = ["#b32e2c","#c9a227","#1c6b3f","#2c5d8f"];
+
+/* ===== staat ===== */
+const OPSLAG="kleurenwiezen_wh1";
+let state = laad() || {
+  namen:["Speler 1","Speler 2","Speler 3","Speler 4"],
+  opties:{alleenVanaf:5, kleinemis:true, piccolo:true, troel:true},
+  startDeler:0,
+  rondes:[]
+};
+if(!state.opties) state.opties={alleenVanaf:5,kleinemis:true,piccolo:true,troel:true};
+if(state.startDeler==null) state.startDeler=0;
+
+let invoer = {contract:"vragen", makers:[], bod:8, behaald:0, gelukt:null, bewerkIndex:null};
+function standaardBod(contract){ const c=C[contract]; if(!c.bod) return 0; return contract==="alleen"?state.opties.alleenVanaf:c.bod[0]; }
+function resetInvoer(){ invoer={contract:invoer.contract, makers:[], bod:standaardBod(invoer.contract)||invoer.bod, behaald:0, gelukt:null, bewerkIndex:null}; }
+
+function laad(){ try{const r=localStorage.getItem(OPSLAG);return r?JSON.parse(r):null;}catch(e){return null;} }
+function bewaar(){ try{localStorage.setItem(OPSLAG,JSON.stringify(state));}catch(e){} }
+
+/* ===== puntenmotor (Whisthub) ===== */
+function deltas(contract, makers, bod, behaald, gelukt){
+  const t=C[contract].type, d=[0,0,0,0];
+  const zet=(w,lone)=>{ if(lone){const m=makers[0]; if(m==null)return; d[m]=w*3; for(let i=0;i<4;i++) if(i!==m) d[i]=-w;}
+    else { for(let i=0;i<4;i++) d[i]=makers.includes(i)?w:-w; } };
+  if(t==="pas") return d;
+  if(t==="samen"){
+    if(behaald>=bod) zet(P.samen[behaald],false);
+    else zet(-(P.samen[bod]+(bod-behaald)*P.samenU),false);
+  } else if(t==="solo"){
+    if(behaald>=bod){ const over=Math.max(0,Math.min(behaald,8)-bod); zet(P.solo[bod]+over*P.soloOver,true); }
+    else zet(-(P.solo[bod]+(bod-behaald)*P.soloU),true);
+  } else if(t==="abondance"){
+    if(behaald>=bod) zet(P.abond[behaald],true); else zet(-P.abond[bod],true);
+  } else if(t==="troel"){
+    if(behaald>=13) zet(P.troel13,false); else if(behaald>=8) zet(P.troel,false); else zet(-P.troel,false);
+  } else if(t==="kleinemis") zet(gelukt?P.kleinemis:-P.kleinemis,true);
+    else if(t==="piccolo")   zet(gelukt?P.piccolo:-P.piccolo,true);
+    else if(t==="grotemis")  zet(gelukt?P.grotemis:-P.grotemis,true);
+    else if(t==="openmis")   zet(gelukt?P.openmis:-P.openmis,true);
+    else if(t==="soloslim")  zet(gelukt?P.soloslim:-P.soloslim,true);
+  return d;
+}
+function totalen(){ const t=[0,0,0,0]; for(const r of state.rondes) for(let i=0;i<4;i++) t[i]+=r.deltas[i]; return t; }
+function huidigeDeler(){ return (state.startDeler + state.rondes.length) % 4; }
+function zichtbareContracten(){ return Object.keys(C).filter(k=>{ const o=C[k].optie; return !o || state.opties[o]; }); }
+
+/* ===== render: scorebord ===== */
+function renderBord(){
+  const t=totalen(), max=Math.max(...t), heeft=state.rondes.length>0;
+  const laatste=heeft?state.rondes[state.rondes.length-1].deltas:null;
+  const deler=huidigeDeler();
+  document.getElementById("bord").innerHTML = state.namen.map((naam,i)=>{
+    const leider=heeft&&t[i]===max;
+    let badge="";
+    if(laatste){ const dl=laatste[i]; const kl=dl>0?"plus":(dl<0?"min":"nul");
+      badge=`<span class="laatste ${kl}">${dl>0?"+":""}${dl}</span>`; }
+    return `<div class="seat ${leider?"leider":""}">${badge}
+      <div class="naam">${leider?'<span class="kroon">♛</span>':""}<span class="stipje" style="background:${KLEUREN[i]}"></span><span class="tekst">${esc(naam)}</span></div>
+      <div class="score ${t[i]<0?"neg":""}">${t[i]>0?"+":""}${t[i]}</div>
+      ${i===deler?'<span class="deelt">deelt</span>':""}</div>`;
+  }).join("");
+}
+
+/* ===== render: invoer ===== */
+function renderSpel(){
+  const wrap=document.getElementById("spel-keuze");
+  let lijst=zichtbareContracten();
+  if(!lijst.includes(invoer.contract)) lijst=[invoer.contract,...lijst];
+  wrap.innerHTML = lijst.map(k=>
+    `<button class="chip ${invoer.contract===k?"aan":""}" data-k="${k}">${C[k].label}<span class="sub">${C[k].sub}</span></button>`
+  ).join("");
+  wrap.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+    invoer.contract=b.dataset.k; invoer.makers=[]; invoer.gelukt=null;
+    const c=C[invoer.contract];
+    if(c.bod){ invoer.bod = standaardBod(invoer.contract); }
+    invoer.behaald=0;
+    renderAlles();
+  });
+}
+function renderSpelers(){
+  const c=C[invoer.contract], blok=document.getElementById("blok-spelers");
+  if(c.spelers===0){ blok.classList.add("verborgen"); return; }
+  blok.classList.remove("verborgen");
+  document.getElementById("spelers-label").textContent = c.spelers===2?"Wie spelen er samen?":"Wie speelt alleen?";
+  document.getElementById("spelers-keuze").innerHTML = state.namen.map((n,i)=>
+    `<button class="chip spelerchip ${invoer.makers.includes(i)?"aan":""}" data-i="${i}">${esc(n)}</button>`
+  ).join("");
+  document.querySelectorAll("#spelers-keuze .chip").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, pos=invoer.makers.indexOf(i);
+    if(pos>=0) invoer.makers.splice(pos,1);
+    else { if(invoer.makers.length>=c.spelers) invoer.makers.shift(); invoer.makers.push(i); }
+    renderSpelers(); renderPreview();
+  });
+  document.getElementById("spelers-hint").textContent =
+    `Kies ${c.spelers} ${c.spelers===1?"speler":"spelers"} (${invoer.makers.length}/${c.spelers} gekozen).`;
+}
+function renderBod(){
+  const c=C[invoer.contract], blok=document.getElementById("blok-bod");
+  if(!c.bod){ blok.classList.add("verborgen"); return; }
+  blok.classList.remove("verborgen");
+  let lo=c.bod[0], hi=c.bod[1];
+  if(invoer.contract==="alleen") lo=state.opties.alleenVanaf;
+  if(invoer.bod<lo) invoer.bod=lo;
+  document.getElementById("bod-label").textContent = c.type==="samen"?"Geboden slagen (samen)":"Geboden slagen";
+  let html=""; for(let n=lo;n<=hi;n++) html+=`<button class="chip ${invoer.bod===n?"aan":""}" data-n="${n}">${n}</button>`;
+  const wrap=document.getElementById("bod-keuze"); wrap.innerHTML=html;
+  wrap.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+    invoer.bod=+b.dataset.n; renderBod(); renderBehaald(); renderPreview();
+  });
+}
+function renderBehaald(){
+  const c=C[invoer.contract];
+  const bBehaald=document.getElementById("blok-behaald"), bGelukt=document.getElementById("blok-gelukt");
+  if(GELUKT_TYPES.includes(c.type)){
+    bBehaald.classList.add("verborgen"); bGelukt.classList.remove("verborgen");
+    let tekst="Gelukt?";
+    if(c.type==="kleinemis") tekst="Geen enkele van de 12 slagen gehaald?";
+    else if(c.type==="grotemis"||c.type==="openmis") tekst="Geen enkele slag gehaald?";
+    else if(c.type==="piccolo") tekst="Precies 1 slag gehaald?";
+    else if(c.type==="soloslim") tekst="Alle 13 slagen gehaald?";
+    document.getElementById("gelukt-label").textContent=tekst;
+    document.getElementById("btn-ja").classList.toggle("aan", invoer.gelukt===true);
+    document.getElementById("btn-nee").classList.toggle("aan", invoer.gelukt===false);
+  } else if(c.type==="pas"){
+    bBehaald.classList.add("verborgen"); bGelukt.classList.add("verborgen");
+  } else {
+    bBehaald.classList.remove("verborgen"); bGelukt.classList.add("verborgen");
+    document.getElementById("slag-telling").textContent=invoer.behaald;
+    document.getElementById("min-slag").disabled = invoer.behaald<=0;
+    document.getElementById("plus-slag").disabled = invoer.behaald>=13;
+  }
+}
+function geldig(){
+  const c=C[invoer.contract];
+  if(c.type==="pas") return true;
+  if(invoer.makers.length!==c.spelers) return false;
+  if(GELUKT_TYPES.includes(c.type)) return invoer.gelukt!==null;
+  return true;
+}
+function renderPreview(){
+  const pv=document.getElementById("preview"), btn=document.getElementById("btn-opslaan");
+  const c=C[invoer.contract];
+  if(!geldig()){ pv.classList.remove("toon"); btn.disabled=true; return; }
+  btn.disabled=false;
+  if(c.type==="pas"){ pv.classList.remove("toon"); return; }
+  const d=deltas(invoer.contract,invoer.makers,invoer.bod,invoer.behaald,invoer.gelukt);
+  pv.classList.add("toon");
+  pv.innerHTML = `<div class="kop">Punten deze ronde</div>` + state.namen.map((n,i)=>{
+    const kl=d[i]>0?"p":(d[i]<0?"m":"n");
+    return `<div class="rij"><span>${esc(n)}</span><span class="${kl}">${d[i]>0?"+":""}${d[i]}</span></div>`;
+  }).join("");
+}
+function renderModus(){
+  const bewerkt = invoer.bewerkIndex!=null;
+  document.getElementById("ronde-titel").textContent = bewerkt ? ("Ronde "+(invoer.bewerkIndex+1)+" bewerken") : "Nieuwe ronde";
+  document.getElementById("btn-opslaan").textContent = bewerkt ? "Ronde bijwerken" : "Ronde opslaan";
+  const balk=document.getElementById("bewerk-balk");
+  balk.classList.toggle("toon", bewerkt);
+  if(bewerkt) document.getElementById("bewerk-tekst").textContent = "Je bewerkt ronde "+(invoer.bewerkIndex+1)+".";
+}
+
+/* ===== render: grafiek ===== */
+function renderGrafiek(){
+  const kaart=document.getElementById("grafiek-kaart");
+  const n=state.rondes.length;
+  if(n<2){ kaart.classList.remove("toon"); return; }
+  kaart.classList.add("toon");
+  // cumulatieve reeksen incl. startpunt 0
+  const reeksen=[[0],[0],[0],[0]];
+  const cum=[0,0,0,0];
+  for(const r of state.rondes){ for(let i=0;i<4;i++){ cum[i]+=r.deltas[i]; reeksen[i].push(cum[i]); } }
+  let lo=Math.min(0,...reeksen.flat()), hi=Math.max(0,...reeksen.flat());
+  if(lo===hi){ lo-=1; hi+=1; }
+  const W=600,H=220,padL=40,padR=12,padT=14,padB=22;
+  const x=i=>padL+(W-padL-padR)*(i/n);
+  const y=v=>padT+(H-padT-padB)*(1-(v-lo)/(hi-lo));
+  // rasterlijnen: 0-lijn + boven/onder
+  let svg=`<line x1="${padL}" y1="${y(0)}" x2="${W-padR}" y2="${y(0)}" stroke="#cdc3a9" stroke-width="1.2"/>`;
+  svg+=`<text x="${padL-6}" y="${y(0)+4}" text-anchor="end" font-size="11" fill="#5b5648">0</text>`;
+  for(const v of [hi,lo]){
+    if(v!==0){
+      svg+=`<line x1="${padL}" y1="${y(v)}" x2="${W-padR}" y2="${y(v)}" stroke="#e6ddc6" stroke-width="1" stroke-dasharray="3 4"/>`;
+      svg+=`<text x="${padL-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="#8a8371">${v}</text>`;
+    }
+  }
+  for(let i=0;i<4;i++){
+    const pts=reeksen[i].map((v,idx)=>`${x(idx).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    svg+=`<polyline points="${pts}" fill="none" stroke="${KLEUREN[i]}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const lv=reeksen[i][n];
+    svg+=`<circle cx="${x(n)}" cy="${y(lv)}" r="3.4" fill="${KLEUREN[i]}"/>`;
+  }
+  document.getElementById("grafiek").innerHTML=svg;
+  document.getElementById("legende").innerHTML = state.namen.map((nm,i)=>
+    `<span><i style="background:${KLEUREN[i]}"></i>${esc(nm)}</span>`).join("");
+}
+
+/* ===== render: rondes ===== */
+function renderRondes(){
+  const wrap=document.getElementById("rondes");
+  if(!state.rondes.length){ wrap.innerHTML=`<p class="rondes-leeg">Nog geen rondes gespeeld.</p>`; return; }
+  wrap.innerHTML = state.rondes.map((r,idx)=>{
+    const c=C[r.contract]||{label:r.contract};
+    const namen=r.makers.map(i=>state.namen[i]).join(" & ");
+    let detail;
+    if(c.type==="pas") detail="Iedereen paste — herdelen";
+    else if(GELUKT_TYPES.includes(c.type)) detail=`${esc(namen)} · ${r.gelukt?"gelukt":"niet gelukt"}`;
+    else if(c.type==="troel") detail=`${esc(namen)} · ${r.behaald} slagen`;
+    else detail=`${esc(namen)} · geboden ${r.bod}, behaald ${r.behaald}`;
+    const delta=r.deltas.map(dl=>{const kl=dl>0?"p":(dl<0?"m":"");return `<span class="${kl}">${dl>0?"+":""}${dl}</span>`;}).join("&nbsp;/&nbsp;");
+    const knoppen = c.type==="pas"
+      ? `<button class="wis" data-idx="${idx}" aria-label="Verwijderen">✕</button>`
+      : `<button class="bew" data-bew="${idx}" aria-label="Wijzigen">✎</button><button class="wis" data-idx="${idx}" aria-label="Verwijderen">✕</button>`;
+    return `<div class="ronde"><div class="nr">${idx+1}</div>
+      <div class="info"><div class="spel">${c.label}</div><div class="detail">${detail}</div></div>
+      <div class="delta">${delta}</div>${knoppen}</div>`;
+  }).reverse().join("");
+  wrap.querySelectorAll(".wis").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.idx;
+    bevestig("Ronde "+(i+1)+" verwijderen?", ()=>{
+      state.rondes.splice(i,1);
+      if(invoer.bewerkIndex!=null) resetInvoer();
+      bewaar(); renderAlles();
+    }, "Verwijderen");
+  });
+  wrap.querySelectorAll(".bew").forEach(b=>b.onclick=()=>bewerkRonde(+b.dataset.bew));
+}
+function bewerkRonde(idx){
+  const r=state.rondes[idx];
+  invoer={contract:r.contract, makers:[...r.makers], bod:r.bod, behaald:r.behaald, gelukt:r.gelukt, bewerkIndex:idx};
+  renderAlles();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function renderAlles(){ renderBord(); renderSpel(); renderSpelers(); renderBod(); renderBehaald(); renderModus(); renderPreview(); renderGrafiek(); renderRondes(); }
+
+/* ===== instellingen ===== */
+function renderInstel(){
+  document.getElementById("namen").innerHTML = state.namen.map((n,i)=>
+    `<div class="naamrij"><span class="stip" style="background:${KLEUREN[i]}"></span>
+     <input type="text" data-i="${i}" value="${esc(n)}" maxlength="18"></div>`).join("");
+  document.querySelectorAll("#namen input").forEach(inp=>inp.oninput=()=>{
+    state.namen[+inp.dataset.i]=inp.value||("Speler "+(+inp.dataset.i+1));
+    bewaar(); renderBord(); renderSpelers(); renderRondes(); renderPreview(); renderGrafiek(); renderDeler();
+  });
+  renderDeler();
+  document.querySelectorAll("#seg-alleen button").forEach(b=>
+    b.classList.toggle("aan", +b.dataset.v===state.opties.alleenVanaf));
+  setSchakel("sw-kleinemis", state.opties.kleinemis);
+  setSchakel("sw-piccolo", state.opties.piccolo);
+  setSchakel("sw-troel", state.opties.troel);
+}
+function renderDeler(){
+  const d=huidigeDeler();
+  document.getElementById("deler-keuze").innerHTML = state.namen.map((n,i)=>
+    `<button class="chip ${i===d?"aan":""}" data-i="${i}">${esc(n)}</button>`).join("");
+  document.querySelectorAll("#deler-keuze .chip").forEach(b=>b.onclick=()=>{
+    const gewenst=+b.dataset.i;
+    state.startDeler=((gewenst - state.rondes.length) % 4 + 4) % 4;
+    bewaar(); renderDeler(); renderBord();
+  });
+}
+function setSchakel(id,aan){ document.getElementById(id).classList.toggle("aan",aan); }
+
+/* ===== delen ===== */
+function standAlsTekst(){
+  const t=totalen();
+  const volg=[0,1,2,3].sort((a,b)=>t[b]-t[a]);
+  let s="🃏 Kleurenwiezen — stand na "+state.rondes.length+" ronde"+(state.rondes.length===1?"":"s")+"\n";
+  volg.forEach((i,r)=>{ s+=(r+1)+". "+state.namen[i]+": "+(t[i]>0?"+":"")+t[i]+"\n"; });
+  return s.trim();
+}
+async function deelStand(){
+  const tekst=standAlsTekst();
+  if(navigator.share){
+    try{ await navigator.share({text:tekst}); return; }catch(e){ if(e && e.name==="AbortError") return; }
+  }
+  try{ await navigator.clipboard.writeText(tekst); toast("Stand gekopieerd naar klembord"); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=tekst; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand("copy"); toast("Stand gekopieerd naar klembord"); }catch(e2){ toast("Kopiëren mislukt"); }
+    ta.remove();
+  }
+}
+let toastTimer=null;
+function toast(msg){
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.classList.add("toon");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("toon"),2200);
+}
+
+/* ===== helpers ===== */
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ===== events ===== */
+document.getElementById("plus-slag").onclick=()=>{ if(invoer.behaald<13){invoer.behaald++;renderBehaald();renderPreview();} };
+document.getElementById("min-slag").onclick =()=>{ if(invoer.behaald>0){invoer.behaald--;renderBehaald();renderPreview();} };
+document.getElementById("btn-ja").onclick =()=>{ invoer.gelukt=true; renderBehaald(); renderPreview(); };
+document.getElementById("btn-nee").onclick=()=>{ invoer.gelukt=false; renderBehaald(); renderPreview(); };
+document.getElementById("btn-opslaan").onclick=()=>{
+  if(!geldig()) return;
+  const d=deltas(invoer.contract,invoer.makers,invoer.bod,invoer.behaald,invoer.gelukt);
+  const ronde={contract:invoer.contract, makers:[...invoer.makers], bod:invoer.bod, behaald:invoer.behaald, gelukt:invoer.gelukt, deltas:d};
+  if(invoer.bewerkIndex!=null) state.rondes[invoer.bewerkIndex]=ronde;
+  else state.rondes.push(ronde);
+  resetInvoer();
+  bewaar(); renderAlles(); window.scrollTo({top:0,behavior:"smooth"});
+};
+document.getElementById("btn-annuleer-bewerk").onclick=()=>{ resetInvoer(); renderAlles(); };
+document.getElementById("btn-deel").onclick=deelStand;
+document.getElementById("btn-deel2").onclick=deelStand;
+
+const overlay=document.getElementById("overlay");
+document.getElementById("btn-instel").onclick=()=>{ renderInstel(); overlay.classList.add("open"); };
+document.getElementById("btn-sluit").onclick =()=> overlay.classList.remove("open");
+overlay.onclick=e=>{ if(e.target===overlay) overlay.classList.remove("open"); };
+document.querySelectorAll("#seg-alleen button").forEach(b=>b.onclick=()=>{
+  state.opties.alleenVanaf=+b.dataset.v;
+  if(invoer.contract==="alleen" && invoer.bod<state.opties.alleenVanaf) invoer.bod=state.opties.alleenVanaf;
+  bewaar(); renderInstel(); renderBod(); renderPreview();
+});
+[["sw-kleinemis","kleinemis"],["sw-piccolo","piccolo"],["sw-troel","troel"]].forEach(([id,key])=>{
+  document.getElementById(id).onclick=()=>{
+    state.opties[key]=!state.opties[key];
+    if(!state.opties[key] && invoer.contract===key){ invoer.contract="vragen"; resetInvoer(); invoer.bod=8; }
+    bewaar(); renderInstel(); renderSpel(); renderSpelers(); renderBod(); renderBehaald(); renderPreview();
+  };
+});
+document.getElementById("btn-nieuw-spel").onclick=()=>{
+  bevestig("Alle rondes en scores wissen? Namen en instellingen blijven behouden.", ()=>{
+    state.rondes=[]; resetInvoer();
+    bewaar(); overlay.classList.remove("open"); renderAlles(); window.scrollTo({top:0,behavior:"smooth"});
+  }, "Alles wissen");
+};
+
+let _confirmCb=null;
+function bevestig(tekst, onJa, jaLabel){
+  document.getElementById("confirm-tekst").textContent=tekst;
+  document.getElementById("confirm-ja").textContent=jaLabel||"Bevestigen";
+  _confirmCb=onJa;
+  document.getElementById("confirm-overlay").classList.add("open");
+}
+const confirmOverlay=document.getElementById("confirm-overlay");
+document.getElementById("confirm-ja").onclick=()=>{ confirmOverlay.classList.remove("open"); const cb=_confirmCb; _confirmCb=null; if(cb)cb(); };
+document.getElementById("confirm-nee").onclick=()=>{ confirmOverlay.classList.remove("open"); _confirmCb=null; };
+confirmOverlay.onclick=e=>{ if(e.target===confirmOverlay){ confirmOverlay.classList.remove("open"); _confirmCb=null; } };
+
+renderAlles();
+</script>
+</body>
+</html>
