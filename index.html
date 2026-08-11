@@ -20,6 +20,7 @@
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  button,input,.chip{touch-action:manipulation}
   html,body{margin:0}
   body{font-family:var(--sans);color:var(--ivoor);
     background:radial-gradient(120% 80% at 50% -10%, #1f5340 0%, var(--groen) 45%, var(--groen-diep) 100%);
@@ -74,13 +75,6 @@
   .mini{display:flex;flex-wrap:wrap;gap:7px}
   .mini .chip{min-width:0;flex:0 0 auto;width:52px;padding:9px 0;font-size:1rem}
   .hint{font-size:.78rem;color:var(--inkt-zacht);margin:9px 0 0}
-
-  .stepper{display:flex;align-items:center;gap:14px;justify-content:center;margin-top:2px}
-  .stepper button{width:54px;height:54px;border-radius:14px;border:1.5px solid #d8cfb8;background:#fff;
-    font-size:1.6rem;font-weight:700;color:var(--inkt);cursor:pointer;line-height:1}
-  .stepper button:active{transform:scale(.94)}
-  .stepper button:disabled{opacity:.35}
-  .stepper .telling{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:2.6rem;min-width:78px;text-align:center}
 
   .tweekeuze{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .tweekeuze .chip.aan.ja{border-color:#1c6b3f;background:#1c6b3f}
@@ -196,11 +190,7 @@
 
   <div class="blok" id="blok-behaald">
     <label class="veld">Behaalde slagen</label>
-    <div class="stepper">
-      <button id="min-slag" aria-label="Minder">−</button>
-      <div class="telling" id="slag-telling">0</div>
-      <button id="plus-slag" aria-label="Meer">+</button>
-    </div>
+    <div class="mini" id="behaald-keuze"></div>
   </div>
 
   <div class="blok verborgen" id="blok-gelukt">
@@ -432,9 +422,11 @@ function renderBehaald(){
     bBehaald.classList.add("verborgen"); bGelukt.classList.add("verborgen");
   } else {
     bBehaald.classList.remove("verborgen"); bGelukt.classList.add("verborgen");
-    document.getElementById("slag-telling").textContent=invoer.behaald;
-    document.getElementById("min-slag").disabled = invoer.behaald<=0;
-    document.getElementById("plus-slag").disabled = invoer.behaald>=13;
+    let html=""; for(let n=0;n<=13;n++) html+=`<button class="chip ${invoer.behaald===n?"aan":""}" data-n="${n}">${n}</button>`;
+    const wrap=document.getElementById("behaald-keuze"); wrap.innerHTML=html;
+    wrap.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+      invoer.behaald=+b.dataset.n; renderBehaald(); renderPreview();
+    });
   }
 }
 function geldig(){
@@ -598,8 +590,6 @@ function toast(msg){
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 /* ===== events ===== */
-document.getElementById("plus-slag").onclick=()=>{ if(invoer.behaald<13){invoer.behaald++;renderBehaald();renderPreview();} };
-document.getElementById("min-slag").onclick =()=>{ if(invoer.behaald>0){invoer.behaald--;renderBehaald();renderPreview();} };
 document.getElementById("btn-ja").onclick =()=>{ invoer.gelukt=true; renderBehaald(); renderPreview(); };
 document.getElementById("btn-nee").onclick=()=>{ invoer.gelukt=false; renderBehaald(); renderPreview(); };
 document.getElementById("btn-opslaan").onclick=()=>{
