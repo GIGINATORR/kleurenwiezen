@@ -151,6 +151,15 @@
   .dialoog .knoppen{display:flex;gap:10px}
   .dialoog .knoppen button{flex:1;border-radius:10px;padding:12px;font-size:.95rem;font-weight:600;cursor:pointer;border:1.5px solid #d8cfb8;background:#fff;color:var(--inkt)}
   .dialoog .knoppen button.bevestig{border:none;background:var(--rood);color:#fff}
+  .dialoog.welkom{text-align:center;max-width:360px}
+  .welkom-suits{font-size:2rem;letter-spacing:.1em;margin-bottom:10px;color:var(--inkt)}
+  .welkom-suits .goud{color:var(--goud)}
+  .dialoog.welkom h3{font-family:var(--serif);font-size:1.15rem;font-weight:400;margin:0 0 20px;line-height:1.55}
+  .dialoog.welkom h3 span{color:var(--inkt-zacht);font-size:.95rem}
+  .taalknop{display:block;width:100%;margin-bottom:9px;border:1.5px solid #d8cfb8;background:#fff;color:var(--inkt);
+    border-radius:12px;padding:14px;font-size:1rem;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .taalknop:active{transform:scale(.98);border-color:var(--groen)}
+  .welkom-hint{font-size:.72rem;color:var(--inkt-zacht);margin:16px 0 0;line-height:1.5}
   .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%) translateY(20px);
     background:var(--inkt);color:var(--ivoor);border-radius:12px;padding:10px 18px;font-size:.85rem;opacity:0;
     pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;white-space:nowrap}
@@ -269,6 +278,17 @@
       <button id="confirm-nee">Annuleren</button>
       <button class="bevestig" id="confirm-ja">Bevestigen</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay midden" id="welkom-overlay">
+  <div class="dialoog welkom">
+    <div class="welkom-suits"><span>♠</span><span class="goud">♥</span><span class="goud">♦</span><span>♣</span></div>
+    <h3>Kies je taal<br><span>Choose your language</span><br><span>Choisissez votre langue</span></h3>
+    <button class="taalknop" data-t="nl">Nederlands</button>
+    <button class="taalknop" data-t="en">English</button>
+    <button class="taalknop" data-t="fr">Français</button>
+    <p class="welkom-hint">Je kan dit later wijzigen bij ⚙ · You can change this later in ⚙ · Modifiable plus tard dans ⚙</p>
   </div>
 </div>
 
@@ -403,6 +423,8 @@ let state = laad() || {
 if(!state.opties) state.opties={alleenVanaf:5,kleinemis:true,piccolo:true,troel:true};
 if(state.startDeler==null) state.startDeler=0;
 if(state.taal===undefined) state.taal=null;
+// bestaande gebruikers met rondes of een taalkeuze krijgen het welkomstscherm niet meer
+if(state.taalGekozen===undefined) state.taalGekozen = (state.taal!==null) || (state.rondes && state.rondes.length>0);
 
 let invoer = {contract:"vragen", makers:[], bod:8, behaald:0, gelukt:null, bewerkIndex:null};
 function standaardBod(contract){ const c=C[contract]; if(!c.bod) return 0; return contract==="alleen"?state.opties.alleenVanaf:c.bod[0]; }
@@ -686,6 +708,7 @@ function renderTaalKeuze(){
     `<button class="chip ${state.taal===v?"aan":""}" data-t="${v===null?"auto":v}">${lbl}</button>`).join("");
   document.querySelectorAll("#taal-keuze .chip").forEach(b=>b.onclick=()=>{
     state.taal = b.dataset.t==="auto" ? null : b.dataset.t;
+    state.taalGekozen=true;
     bewaar(); renderAlles(); renderInstel();
   });
 }
@@ -782,6 +805,20 @@ const confirmOverlay=document.getElementById("confirm-overlay");
 document.getElementById("confirm-ja").onclick=()=>{ confirmOverlay.classList.remove("open"); const cb=_confirmCb; _confirmCb=null; if(cb)cb(); };
 document.getElementById("confirm-nee").onclick=()=>{ confirmOverlay.classList.remove("open"); _confirmCb=null; };
 confirmOverlay.onclick=e=>{ if(e.target===confirmOverlay){ confirmOverlay.classList.remove("open"); _confirmCb=null; } };
+
+/* ===== welkomstscherm: taalkeuze bij eerste start ===== */
+document.querySelectorAll("#welkom-overlay .taalknop").forEach(b=>b.onclick=()=>{
+  state.taal=b.dataset.t; state.taalGekozen=true; bewaar();
+  document.getElementById("welkom-overlay").classList.remove("open");
+  renderAlles();
+});
+if(!state.taalGekozen){
+  // voorselectie op de systeemtaal: die knop krijgt alvast de accentkleur
+  const auto=autoTaal();
+  const knop=document.querySelector('#welkom-overlay .taalknop[data-t="'+auto+'"]');
+  if(knop){ knop.style.borderColor="var(--groen)"; knop.style.background="var(--groen)"; knop.style.color="#fff"; }
+  document.getElementById("welkom-overlay").classList.add("open");
+}
 
 renderAlles();
 

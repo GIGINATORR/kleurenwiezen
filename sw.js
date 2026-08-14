@@ -1,5 +1,5 @@
 // Kleurenwiezen service worker — verhoog het versienummer bij elke nieuwe release
-const CACHE = "kleurenwiezen-v3";
+const CACHE = "kleurenwiezen-v4";
 const BESTANDEN = [
   "./",
   "./index.html",
