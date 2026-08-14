@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Kleurenwiezen">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#143528">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>
   :root{
     --groen-diep:#143528; --groen:#1c4a39; --groen-rand:#2c6149;
@@ -641,6 +644,11 @@ document.getElementById("confirm-nee").onclick=()=>{ confirmOverlay.classList.re
 confirmOverlay.onclick=e=>{ if(e.target===confirmOverlay){ confirmOverlay.classList.remove("open"); _confirmCb=null; } };
 
 renderAlles();
+
+/* ===== service worker (offline + PWA-installatie) ===== */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
 </script>
 </body>
 </html>
