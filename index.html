@@ -17,7 +17,6 @@
     --groen-diep:#143528; --groen:#1c4a39; --groen-rand:#2c6149;
     --ivoor:#f6f1e3; --ivoor-zacht:#efe7d2; --inkt:#211f1a; --inkt-zacht:#5b5648;
     --rood:#b32e2c; --goud:#c9a227; --goud-zacht:#e3c969;
-    --k0:#b32e2c; --k1:#c9a227; --k2:#1c6b3f; --k3:#2c5d8f;
     --schaduw:0 10px 30px rgba(0,0,0,.35);
     --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -99,7 +98,6 @@
   .knop-primair:disabled{background:#c4bca6;cursor:not-allowed}
   .knop-primair:active:not(:disabled){transform:scale(.99)}
 
-  /* grafiek */
   #grafiek-kaart{display:none}
   #grafiek-kaart.toon{display:block}
   #grafiek{width:100%;height:auto;display:block}
@@ -143,6 +141,7 @@
   .segment button{border:none;background:#fff;color:var(--inkt);padding:8px 14px;font-size:.9rem;font-weight:600;cursor:pointer}
   .segment button.aan{background:var(--groen);color:#fff}
   .deler-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .taal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
   .knop-secundair{width:100%;border:1.5px solid #d8cfb8;background:#fff;color:var(--inkt);border-radius:12px;
     padding:13px;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:6px}
   .knop-gevaar{border-color:#e3b3b1;color:var(--rood)}
@@ -163,11 +162,11 @@
 <body>
 <header>
   <div class="titel">
-    <span class="suits"><span>♠</span><span class="rood">♥</span><span class="rood">♦</span><span>♣</span></span>Kleurenwiezen
-    <small>Whisthub-telling</small>
+    <span class="suits"><span>♠</span><span class="rood">♥</span><span class="rood">♦</span><span>♣</span></span><span id="app-naam">Kleurenwiezen</span>
+    <small id="app-sub">Whisthub-telling</small>
   </div>
   <div class="kop-knoppen">
-    <button class="iconknop" id="btn-deel" aria-label="Stand delen">⇪</button>
+    <button class="iconknop" id="btn-deel" aria-label="Delen">⇪</button>
     <button class="iconknop" id="btn-instel" aria-label="Instellingen">⚙</button>
   </div>
 </header>
@@ -177,7 +176,7 @@
 <section class="kaart">
   <h2><span class="merk">♦</span> <span id="ronde-titel">Nieuwe ronde</span></h2>
 
-  <label class="veld">Welk spel?</label>
+  <label class="veld" id="lbl-welkspel">Welk spel?</label>
   <div class="chips" id="spel-keuze"></div>
 
   <div class="blok" id="blok-spelers">
@@ -192,7 +191,7 @@
   </div>
 
   <div class="blok" id="blok-behaald">
-    <label class="veld">Behaalde slagen</label>
+    <label class="veld" id="lbl-behaald">Behaalde slagen</label>
     <div class="mini" id="behaald-keuze"></div>
   </div>
 
@@ -210,53 +209,56 @@
 </section>
 
 <section class="kaart" id="grafiek-kaart">
-  <h2><span class="merk">♥</span> Scoreverloop</h2>
-  <svg id="grafiek" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Scoreverloop per ronde"></svg>
+  <h2><span class="merk">♥</span> <span id="grafiek-titel">Scoreverloop</span></h2>
+  <svg id="grafiek" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" role="img"></svg>
   <div class="legende" id="legende"></div>
 </section>
 
 <section class="kaart">
-  <h2><span class="merk">♣</span> Rondes</h2>
+  <h2><span class="merk">♣</span> <span id="rondes-titel">Rondes</span></h2>
   <div id="rondes"></div>
 </section>
 
-<p class="voet">Werkt offline · scores blijven bewaard op dit toestel</p>
+<p class="voet" id="voet">Werkt offline · scores blijven bewaard op dit toestel</p>
 
 <div class="overlay" id="overlay">
   <div class="blad">
-    <h2>Instellingen <button class="sluit" id="btn-sluit">✕</button></h2>
+    <h2><span id="instel-titel">Instellingen</span> <button class="sluit" id="btn-sluit">✕</button></h2>
 
-    <h3>Spelersnamen</h3>
+    <h3 id="h-taal">Taal</h3>
+    <div class="taal-grid chips" id="taal-keuze"></div>
+
+    <h3 id="h-namen">Spelersnamen</h3>
     <div id="namen"></div>
 
-    <h3>Wie deelt de volgende ronde?</h3>
+    <h3 id="h-deler">Wie deelt de volgende ronde?</h3>
     <div class="deler-grid chips" id="deler-keuze"></div>
-    <p class="hint">De deler schuift na elke ronde automatisch één plaats op.</p>
+    <p class="hint" id="deler-hint">De deler schuift na elke ronde automatisch één plaats op.</p>
 
-    <h3>Spelregels</h3>
+    <h3 id="h-regels">Spelregels</h3>
     <div class="optie">
-      <div class="lbl">Alleen gaan vanaf<small>Minimum aantal slagen om alleen te spelen</small></div>
+      <div class="lbl"><span id="o-alleen">Alleen gaan vanaf</span><small id="o-alleen-sub">Minimum aantal slagen om alleen te spelen</small></div>
       <div class="segment" id="seg-alleen">
         <button data-v="5">5</button><button data-v="6">6</button>
       </div>
     </div>
     <div class="optie">
-      <div class="lbl">Kleine miserie<small>Verlies alle 12 slagen na wegleggen</small></div>
-      <button class="schakel" id="sw-kleinemis" aria-label="Kleine miserie"></button>
+      <div class="lbl"><span id="o-kleinemis">Kleine miserie</span><small id="o-kleinemis-sub">Verlies alle 12 slagen na wegleggen</small></div>
+      <button class="schakel" id="sw-kleinemis"></button>
     </div>
     <div class="optie">
-      <div class="lbl">Piccolo<small>Win precies 1 slag</small></div>
-      <button class="schakel" id="sw-piccolo" aria-label="Piccolo"></button>
+      <div class="lbl"><span id="o-piccolo">Piccolo</span><small id="o-piccolo-sub">Win precies 1 slag</small></div>
+      <button class="schakel" id="sw-piccolo"></button>
     </div>
     <div class="optie">
-      <div class="lbl">Troel<small>Verplicht spel bij 3 of 4 azen</small></div>
-      <button class="schakel" id="sw-troel" aria-label="Troel"></button>
+      <div class="lbl"><span id="o-troel">Troel</span><small id="o-troel-sub">Verplicht spel bij 3 of 4 azen</small></div>
+      <button class="schakel" id="sw-troel"></button>
     </div>
 
-    <h3>Beheer</h3>
+    <h3 id="h-beheer">Beheer</h3>
     <button class="knop-secundair" id="btn-deel2">Stand delen of kopiëren</button>
     <button class="knop-secundair knop-gevaar" id="btn-nieuw-spel">Alles wissen &amp; nieuw spel</button>
-    <p class="hint">Puntentelling volgt het officiële Whisthub-rooster en is vast.</p>
+    <p class="hint" id="regels-vast">Puntentelling volgt het officiële Whisthub-rooster en is vast.</p>
   </div>
 </div>
 
@@ -275,6 +277,97 @@
 <script>
 "use strict";
 
+/* ===== vertalingen ===== */
+const T = {
+nl: {
+  appNaam:"Kleurenwiezen", appSub:"Whisthub-telling", docTitel:"Kleurenwiezen — puntenteller",
+  nieuweRonde:"Nieuwe ronde", rondeBewerken:"Ronde {0} bewerken", welkSpel:"Welk spel?",
+  wieSamen:"Wie spelen er samen?", wieAlleen:"Wie speelt alleen?",
+  hintKies:"Kies {0} {1} ({2}/{0} gekozen).", spelerWoord:"speler", spelersWoord:"spelers",
+  geboden:"Geboden slagen", gebodenSamen:"Geboden slagen (samen)", behaald:"Behaalde slagen",
+  g_kleinemis:"Geen enkele van de 12 slagen gehaald?", g_mis:"Geen enkele slag gehaald?",
+  g_piccolo:"Precies 1 slag gehaald?", g_soloslim:"Alle 13 slagen gehaald?",
+  gelukt:"Gelukt", nietGelukt:"Niet gelukt", geluktKlein:"gelukt", nietGeluktKlein:"niet gelukt",
+  bewerkJe:"Je bewerkt ronde {0}.", annuleren:"Annuleren", opslaan:"Ronde opslaan", bijwerken:"Ronde bijwerken",
+  puntenRonde:"Punten deze ronde", scoreverloop:"Scoreverloop", rondes:"Rondes", nogGeen:"Nog geen rondes gespeeld.",
+  iedereenPaste:"Iedereen paste — herdelen", gebodenBehaald:"geboden {0}, behaald {1}", slagen:"{0} slagen",
+  deelt:"deelt", verwijderVraag:"Ronde {0} verwijderen?", verwijderen:"Verwijderen",
+  wisVraag:"Alle rondes en scores wissen? Namen en instellingen blijven behouden.", wissen:"Alles wissen", bevestigen:"Bevestigen",
+  instellingen:"Instellingen", taal:"Taal", taalAuto:"Automatisch", namen:"Spelersnamen",
+  wieDeelt:"Wie deelt de volgende ronde?", delerHint:"De deler schuift na elke ronde automatisch één plaats op.",
+  regels:"Spelregels", oAlleen:"Alleen gaan vanaf", oAlleenSub:"Minimum aantal slagen om alleen te spelen",
+  oKleinemisSub:"Verlies alle 12 slagen na wegleggen", oPiccoloSub:"Win precies 1 slag", oTroelSub:"Verplicht spel bij 3 of 4 azen",
+  beheer:"Beheer", deelKnop:"Stand delen of kopiëren", wisKnop:"Alles wissen & nieuw spel",
+  regelsVast:"Puntentelling volgt het officiële Whisthub-rooster en is vast.",
+  voet:"Werkt offline · scores blijven bewaard op dit toestel",
+  standNa:"Kleurenwiezen — stand na {0} {1}", rondeWoord:"ronde", rondesWoord:"rondes",
+  gekopieerd:"Stand gekopieerd naar klembord", kopieerFout:"Kopiëren mislukt", speler:"Speler",
+  contract:{
+    vragen:["Vragen","samen"], alleen:["Alleen","solo"], kleinemis:["Kleine miserie","0 van 12"],
+    piccolo:["Piccolo","net 1"], abondance:["Abondance","9-12"], troel:["Troel","samen"],
+    grotemis:["Grote miserie","0 van 13"], openmis:["Open miserie","open"], soloslim:["Solo slim","alle 13"], pas:["Pas","herdelen"]
+  }
+},
+en: {
+  appNaam:"Colour Whist", appSub:"Whisthub scoring", docTitel:"Colour Whist — Scorekeeper",
+  nieuweRonde:"New round", rondeBewerken:"Edit round {0}", welkSpel:"Which contract?",
+  wieSamen:"Who plays together?", wieAlleen:"Who plays solo?",
+  hintKies:"Choose {0} {1} ({2}/{0} chosen).", spelerWoord:"player", spelersWoord:"players",
+  geboden:"Tricks bid", gebodenSamen:"Tricks bid (together)", behaald:"Tricks won",
+  g_kleinemis:"Won none of the 12 tricks?", g_mis:"Won no tricks at all?",
+  g_piccolo:"Won exactly 1 trick?", g_soloslim:"Won all 13 tricks?",
+  gelukt:"Succeeded", nietGelukt:"Failed", geluktKlein:"succeeded", nietGeluktKlein:"failed",
+  bewerkJe:"You are editing round {0}.", annuleren:"Cancel", opslaan:"Save round", bijwerken:"Update round",
+  puntenRonde:"Points this round", scoreverloop:"Score history", rondes:"Rounds", nogGeen:"No rounds played yet.",
+  iedereenPaste:"Everyone passed — redeal", gebodenBehaald:"bid {0}, won {1}", slagen:"{0} tricks",
+  deelt:"deals", verwijderVraag:"Delete round {0}?", verwijderen:"Delete",
+  wisVraag:"Clear all rounds and scores? Names and settings will be kept.", wissen:"Clear all", bevestigen:"Confirm",
+  instellingen:"Settings", taal:"Language", taalAuto:"Automatic", namen:"Player names",
+  wieDeelt:"Who deals the next round?", delerHint:"The dealer rotates automatically after every round.",
+  regels:"Game rules", oAlleen:"Solo from", oAlleenSub:"Minimum number of tricks to bid solo",
+  oKleinemisSub:"Lose all 12 tricks after discarding", oPiccoloSub:"Win exactly 1 trick", oTroelSub:"Mandatory with 3 or 4 aces",
+  beheer:"Manage", deelKnop:"Share or copy standings", wisKnop:"Clear all & new game",
+  regelsVast:"Scoring follows the official Whisthub table and is fixed.",
+  voet:"Works offline · scores are stored on this device",
+  standNa:"Colour Whist — standings after {0} {1}", rondeWoord:"round", rondesWoord:"rounds",
+  gekopieerd:"Standings copied to clipboard", kopieerFout:"Copy failed", speler:"Player",
+  contract:{
+    vragen:["Ask","together"], alleen:["Solo","alone"], kleinemis:["Small misery","0 of 12"],
+    piccolo:["Piccolo","exactly 1"], abondance:["Abondance","9-12"], troel:["Trull","together"],
+    grotemis:["Large misery","0 of 13"], openmis:["Open misery","on the table"], soloslim:["Grand slam","all 13"], pas:["Pass","redeal"]
+  }
+},
+fr: {
+  appNaam:"Whist à la couleur", appSub:"Comptage Whisthub", docTitel:"Whist à la couleur — Compteur de points",
+  nieuweRonde:"Nouvelle donne", rondeBewerken:"Modifier la donne {0}", welkSpel:"Quel contrat ?",
+  wieSamen:"Qui emballe avec qui ?", wieAlleen:"Qui joue en solo ?",
+  hintKies:"Choisissez {0} {1} ({2}/{0}).", spelerWoord:"joueur", spelersWoord:"joueurs",
+  geboden:"Plis annoncés", gebodenSamen:"Plis annoncés (à deux)", behaald:"Plis remportés",
+  g_kleinemis:"Aucun des 12 plis remporté ?", g_mis:"Aucun pli remporté ?",
+  g_piccolo:"Exactement 1 pli remporté ?", g_soloslim:"Les 13 plis remportés ?",
+  gelukt:"Réussi", nietGelukt:"Raté", geluktKlein:"réussi", nietGeluktKlein:"raté",
+  bewerkJe:"Vous modifiez la donne {0}.", annuleren:"Annuler", opslaan:"Enregistrer", bijwerken:"Mettre à jour",
+  puntenRonde:"Points de cette donne", scoreverloop:"Évolution du score", rondes:"Donnes", nogGeen:"Aucune donne jouée.",
+  iedereenPaste:"Tout le monde a passé — redonne", gebodenBehaald:"annoncé {0}, remporté {1}", slagen:"{0} plis",
+  deelt:"donne", verwijderVraag:"Supprimer la donne {0} ?", verwijderen:"Supprimer",
+  wisVraag:"Effacer toutes les donnes et les scores ? Les noms et réglages sont conservés.", wissen:"Tout effacer", bevestigen:"Confirmer",
+  instellingen:"Réglages", taal:"Langue", taalAuto:"Automatique", namen:"Noms des joueurs",
+  wieDeelt:"Qui distribue la prochaine donne ?", delerHint:"Le donneur tourne automatiquement après chaque donne.",
+  regels:"Règles du jeu", oAlleen:"Solo à partir de", oAlleenSub:"Nombre minimum de plis pour annoncer un solo",
+  oKleinemisSub:"Perdre les 12 plis après l'écart", oPiccoloSub:"Remporter exactement 1 pli", oTroelSub:"Obligatoire avec 3 ou 4 as",
+  beheer:"Gestion", deelKnop:"Partager ou copier le score", wisKnop:"Tout effacer & nouvelle partie",
+  regelsVast:"Le comptage suit le barème officiel de Whisthub et est fixe.",
+  voet:"Fonctionne hors ligne · les scores restent sur cet appareil",
+  standNa:"Whist à la couleur — score après {0} {1}", rondeWoord:"donne", rondesWoord:"donnes",
+  gekopieerd:"Score copié dans le presse-papiers", kopieerFout:"Échec de la copie", speler:"Joueur",
+  contract:{
+    vragen:["Emballage","à deux"], alleen:["Solo","seul"], kleinemis:["Petite misère","0 sur 12"],
+    piccolo:["Piccolo","juste 1"], abondance:["Abondance","9-12"], troel:["Trou","à deux"],
+    grotemis:["Grande misère","0 sur 13"], openmis:["Misère étalée","sur table"], soloslim:["Grand chelem","les 13"], pas:["Passe","redonne"]
+  }
+}
+};
+
 /* ===== Whisthub puntentabel ===== */
 const P = {
   samen:{8:8,9:11,10:14,11:17,12:20,13:30}, samenU:3,
@@ -283,18 +376,18 @@ const P = {
   kleinemis:6, piccolo:8, grotemis:12, openmis:24, troel:16, troel13:30, soloslim:60
 };
 
-/* ===== contracten ===== */
+/* ===== contracten (structuur; labels via T) ===== */
 const C = {
-  vragen:   {label:"Vragen",        sub:"samen",  type:"samen",     spelers:2, bod:[8,13]},
-  alleen:   {label:"Alleen",        sub:"solo",   type:"solo",      spelers:1, bod:[5,8]},
-  kleinemis:{label:"Kleine miserie",sub:"0 van 12",type:"kleinemis",spelers:1, optie:"kleinemis"},
-  piccolo:  {label:"Piccolo",       sub:"net 1",  type:"piccolo",   spelers:1, optie:"piccolo"},
-  abondance:{label:"Abondance",     sub:"9-12",   type:"abondance", spelers:1, bod:[9,12]},
-  troel:    {label:"Troel",         sub:"samen",  type:"troel",     spelers:2, optie:"troel"},
-  grotemis: {label:"Grote miserie", sub:"0 van 13",type:"grotemis", spelers:1},
-  openmis:  {label:"Open miserie",  sub:"open",   type:"openmis",   spelers:1},
-  soloslim: {label:"Solo slim",     sub:"alle 13",type:"soloslim",  spelers:1},
-  pas:      {label:"Pas",           sub:"herdelen",type:"pas",      spelers:0}
+  vragen:   {type:"samen",     spelers:2, bod:[8,13]},
+  alleen:   {type:"solo",      spelers:1, bod:[5,8]},
+  kleinemis:{type:"kleinemis", spelers:1, optie:"kleinemis"},
+  piccolo:  {type:"piccolo",   spelers:1, optie:"piccolo"},
+  abondance:{type:"abondance", spelers:1, bod:[9,12]},
+  troel:    {type:"troel",     spelers:2, optie:"troel"},
+  grotemis: {type:"grotemis",  spelers:1},
+  openmis:  {type:"openmis",   spelers:1},
+  soloslim: {type:"soloslim",  spelers:1},
+  pas:      {type:"pas",       spelers:0}
 };
 const GELUKT_TYPES = ["kleinemis","piccolo","grotemis","openmis","soloslim"];
 const KLEUREN = ["#b32e2c","#c9a227","#1c6b3f","#2c5d8f"];
@@ -304,11 +397,12 @@ const OPSLAG="kleurenwiezen_wh1";
 let state = laad() || {
   namen:["Speler 1","Speler 2","Speler 3","Speler 4"],
   opties:{alleenVanaf:5, kleinemis:true, piccolo:true, troel:true},
-  startDeler:0,
+  startDeler:0, taal:null,
   rondes:[]
 };
 if(!state.opties) state.opties={alleenVanaf:5,kleinemis:true,piccolo:true,troel:true};
 if(state.startDeler==null) state.startDeler=0;
+if(state.taal===undefined) state.taal=null;
 
 let invoer = {contract:"vragen", makers:[], bod:8, behaald:0, gelukt:null, bewerkIndex:null};
 function standaardBod(contract){ const c=C[contract]; if(!c.bod) return 0; return contract==="alleen"?state.opties.alleenVanaf:c.bod[0]; }
@@ -317,47 +411,86 @@ function resetInvoer(){ invoer={contract:invoer.contract, makers:[], bod:standaa
 function laad(){ try{const r=localStorage.getItem(OPSLAG);return r?JSON.parse(r):null;}catch(e){return null;} }
 function bewaar(){ try{localStorage.setItem(OPSLAG,JSON.stringify(state));}catch(e){} }
 
+/* ===== taal ===== */
+function autoTaal(){
+  const l=(navigator.language||"en").toLowerCase();
+  if(l.startsWith("nl")) return "nl";
+  if(l.startsWith("fr")) return "fr";
+  return "en";
+}
+function taal(){ return state.taal || autoTaal(); }
+function t(sleutel, ...args){
+  let s = T[taal()][sleutel];
+  if(s==null) s = T.nl[sleutel] || sleutel;
+  args.forEach((a,i)=>{ s = s.split("{"+i+"}").join(a); });
+  return s;
+}
+function cLabel(k){ return (T[taal()].contract[k]||T.nl.contract[k])[0]; }
+function cSub(k){ return (T[taal()].contract[k]||T.nl.contract[k])[1]; }
+
+function renderTaalTeksten(){
+  document.documentElement.lang = taal();
+  document.title = t("docTitel");
+  const zet=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
+  zet("app-naam", t("appNaam")); zet("app-sub", t("appSub"));
+  zet("lbl-welkspel", t("welkSpel")); zet("lbl-behaald", t("behaald"));
+  zet("btn-ja", t("gelukt")); zet("btn-nee", t("nietGelukt"));
+  zet("btn-annuleer-bewerk", t("annuleren"));
+  zet("grafiek-titel", t("scoreverloop")); zet("rondes-titel", t("rondes"));
+  zet("voet", t("voet"));
+  zet("instel-titel", t("instellingen")); zet("h-taal", t("taal")); zet("h-namen", t("namen"));
+  zet("h-deler", t("wieDeelt")); zet("deler-hint", t("delerHint"));
+  zet("h-regels", t("regels"));
+  zet("o-alleen", t("oAlleen")); zet("o-alleen-sub", t("oAlleenSub"));
+  zet("o-kleinemis", cLabel("kleinemis")); zet("o-kleinemis-sub", t("oKleinemisSub"));
+  zet("o-piccolo", cLabel("piccolo")); zet("o-piccolo-sub", t("oPiccoloSub"));
+  zet("o-troel", cLabel("troel")); zet("o-troel-sub", t("oTroelSub"));
+  zet("h-beheer", t("beheer")); zet("btn-deel2", t("deelKnop")); zet("btn-nieuw-spel", t("wisKnop"));
+  zet("regels-vast", t("regelsVast"));
+  zet("confirm-nee", t("annuleren"));
+}
+
 /* ===== puntenmotor (Whisthub) ===== */
 function deltas(contract, makers, bod, behaald, gelukt){
-  const t=C[contract].type, d=[0,0,0,0];
+  const type=C[contract].type, d=[0,0,0,0];
   const zet=(w,lone)=>{ if(lone){const m=makers[0]; if(m==null)return; d[m]=w*3; for(let i=0;i<4;i++) if(i!==m) d[i]=-w;}
     else { for(let i=0;i<4;i++) d[i]=makers.includes(i)?w:-w; } };
-  if(t==="pas") return d;
-  if(t==="samen"){
+  if(type==="pas") return d;
+  if(type==="samen"){
     if(behaald>=bod) zet(P.samen[behaald],false);
     else zet(-(P.samen[bod]+(bod-behaald)*P.samenU),false);
-  } else if(t==="solo"){
+  } else if(type==="solo"){
     if(behaald>=bod){ const over=Math.max(0,Math.min(behaald,8)-bod); zet(P.solo[bod]+over*P.soloOver,true); }
     else zet(-(P.solo[bod]+(bod-behaald)*P.soloU),true);
-  } else if(t==="abondance"){
+  } else if(type==="abondance"){
     if(behaald>=bod) zet(P.abond[behaald],true); else zet(-P.abond[bod],true);
-  } else if(t==="troel"){
+  } else if(type==="troel"){
     if(behaald>=13) zet(P.troel13,false); else if(behaald>=8) zet(P.troel,false); else zet(-P.troel,false);
-  } else if(t==="kleinemis") zet(gelukt?P.kleinemis:-P.kleinemis,true);
-    else if(t==="piccolo")   zet(gelukt?P.piccolo:-P.piccolo,true);
-    else if(t==="grotemis")  zet(gelukt?P.grotemis:-P.grotemis,true);
-    else if(t==="openmis")   zet(gelukt?P.openmis:-P.openmis,true);
-    else if(t==="soloslim")  zet(gelukt?P.soloslim:-P.soloslim,true);
+  } else if(type==="kleinemis") zet(gelukt?P.kleinemis:-P.kleinemis,true);
+    else if(type==="piccolo")   zet(gelukt?P.piccolo:-P.piccolo,true);
+    else if(type==="grotemis")  zet(gelukt?P.grotemis:-P.grotemis,true);
+    else if(type==="openmis")   zet(gelukt?P.openmis:-P.openmis,true);
+    else if(type==="soloslim")  zet(gelukt?P.soloslim:-P.soloslim,true);
   return d;
 }
-function totalen(){ const t=[0,0,0,0]; for(const r of state.rondes) for(let i=0;i<4;i++) t[i]+=r.deltas[i]; return t; }
+function totalen(){ const t2=[0,0,0,0]; for(const r of state.rondes) for(let i=0;i<4;i++) t2[i]+=r.deltas[i]; return t2; }
 function huidigeDeler(){ return (state.startDeler + state.rondes.length) % 4; }
 function zichtbareContracten(){ return Object.keys(C).filter(k=>{ const o=C[k].optie; return !o || state.opties[o]; }); }
 
 /* ===== render: scorebord ===== */
 function renderBord(){
-  const t=totalen(), max=Math.max(...t), heeft=state.rondes.length>0;
+  const tt=totalen(), max=Math.max(...tt), heeft=state.rondes.length>0;
   const laatste=heeft?state.rondes[state.rondes.length-1].deltas:null;
   const deler=huidigeDeler();
   document.getElementById("bord").innerHTML = state.namen.map((naam,i)=>{
-    const leider=heeft&&t[i]===max;
+    const leider=heeft&&tt[i]===max;
     let badge="";
     if(laatste){ const dl=laatste[i]; const kl=dl>0?"plus":(dl<0?"min":"nul");
       badge=`<span class="laatste ${kl}">${dl>0?"+":""}${dl}</span>`; }
     return `<div class="seat ${leider?"leider":""}">${badge}
       <div class="naam">${leider?'<span class="kroon">♛</span>':""}<span class="stipje" style="background:${KLEUREN[i]}"></span><span class="tekst">${esc(naam)}</span></div>
-      <div class="score ${t[i]<0?"neg":""}">${t[i]>0?"+":""}${t[i]}</div>
-      ${i===deler?'<span class="deelt">deelt</span>':""}</div>`;
+      <div class="score ${tt[i]<0?"neg":""}">${tt[i]>0?"+":""}${tt[i]}</div>
+      ${i===deler?`<span class="deelt">${t("deelt")}</span>`:""}</div>`;
   }).join("");
 }
 
@@ -367,12 +500,11 @@ function renderSpel(){
   let lijst=zichtbareContracten();
   if(!lijst.includes(invoer.contract)) lijst=[invoer.contract,...lijst];
   wrap.innerHTML = lijst.map(k=>
-    `<button class="chip ${invoer.contract===k?"aan":""}" data-k="${k}">${C[k].label}<span class="sub">${C[k].sub}</span></button>`
+    `<button class="chip ${invoer.contract===k?"aan":""}" data-k="${k}">${cLabel(k)}<span class="sub">${cSub(k)}</span></button>`
   ).join("");
   wrap.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
     invoer.contract=b.dataset.k; invoer.makers=[]; invoer.gelukt=null;
-    const c=C[invoer.contract];
-    if(c.bod){ invoer.bod = standaardBod(invoer.contract); }
+    if(C[invoer.contract].bod){ invoer.bod = standaardBod(invoer.contract); }
     invoer.behaald=0;
     renderAlles();
   });
@@ -381,7 +513,7 @@ function renderSpelers(){
   const c=C[invoer.contract], blok=document.getElementById("blok-spelers");
   if(c.spelers===0){ blok.classList.add("verborgen"); return; }
   blok.classList.remove("verborgen");
-  document.getElementById("spelers-label").textContent = c.spelers===2?"Wie spelen er samen?":"Wie speelt alleen?";
+  document.getElementById("spelers-label").textContent = c.spelers===2?t("wieSamen"):t("wieAlleen");
   document.getElementById("spelers-keuze").innerHTML = state.namen.map((n,i)=>
     `<button class="chip spelerchip ${invoer.makers.includes(i)?"aan":""}" data-i="${i}">${esc(n)}</button>`
   ).join("");
@@ -392,7 +524,7 @@ function renderSpelers(){
     renderSpelers(); renderPreview();
   });
   document.getElementById("spelers-hint").textContent =
-    `Kies ${c.spelers} ${c.spelers===1?"speler":"spelers"} (${invoer.makers.length}/${c.spelers} gekozen).`;
+    t("hintKies", c.spelers, c.spelers===1?t("spelerWoord"):t("spelersWoord"), invoer.makers.length);
 }
 function renderBod(){
   const c=C[invoer.contract], blok=document.getElementById("blok-bod");
@@ -401,7 +533,7 @@ function renderBod(){
   let lo=c.bod[0], hi=c.bod[1];
   if(invoer.contract==="alleen") lo=state.opties.alleenVanaf;
   if(invoer.bod<lo) invoer.bod=lo;
-  document.getElementById("bod-label").textContent = c.type==="samen"?"Geboden slagen (samen)":"Geboden slagen";
+  document.getElementById("bod-label").textContent = c.type==="samen"?t("gebodenSamen"):t("geboden");
   let html=""; for(let n=lo;n<=hi;n++) html+=`<button class="chip ${invoer.bod===n?"aan":""}" data-n="${n}">${n}</button>`;
   const wrap=document.getElementById("bod-keuze"); wrap.innerHTML=html;
   wrap.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
@@ -413,11 +545,10 @@ function renderBehaald(){
   const bBehaald=document.getElementById("blok-behaald"), bGelukt=document.getElementById("blok-gelukt");
   if(GELUKT_TYPES.includes(c.type)){
     bBehaald.classList.add("verborgen"); bGelukt.classList.remove("verborgen");
-    let tekst="Gelukt?";
-    if(c.type==="kleinemis") tekst="Geen enkele van de 12 slagen gehaald?";
-    else if(c.type==="grotemis"||c.type==="openmis") tekst="Geen enkele slag gehaald?";
-    else if(c.type==="piccolo") tekst="Precies 1 slag gehaald?";
-    else if(c.type==="soloslim") tekst="Alle 13 slagen gehaald?";
+    let tekst=t("g_mis");
+    if(c.type==="kleinemis") tekst=t("g_kleinemis");
+    else if(c.type==="piccolo") tekst=t("g_piccolo");
+    else if(c.type==="soloslim") tekst=t("g_soloslim");
     document.getElementById("gelukt-label").textContent=tekst;
     document.getElementById("btn-ja").classList.toggle("aan", invoer.gelukt===true);
     document.getElementById("btn-nee").classList.toggle("aan", invoer.gelukt===false);
@@ -447,18 +578,18 @@ function renderPreview(){
   if(c.type==="pas"){ pv.classList.remove("toon"); return; }
   const d=deltas(invoer.contract,invoer.makers,invoer.bod,invoer.behaald,invoer.gelukt);
   pv.classList.add("toon");
-  pv.innerHTML = `<div class="kop">Punten deze ronde</div>` + state.namen.map((n,i)=>{
+  pv.innerHTML = `<div class="kop">${t("puntenRonde")}</div>` + state.namen.map((n,i)=>{
     const kl=d[i]>0?"p":(d[i]<0?"m":"n");
     return `<div class="rij"><span>${esc(n)}</span><span class="${kl}">${d[i]>0?"+":""}${d[i]}</span></div>`;
   }).join("");
 }
 function renderModus(){
   const bewerkt = invoer.bewerkIndex!=null;
-  document.getElementById("ronde-titel").textContent = bewerkt ? ("Ronde "+(invoer.bewerkIndex+1)+" bewerken") : "Nieuwe ronde";
-  document.getElementById("btn-opslaan").textContent = bewerkt ? "Ronde bijwerken" : "Ronde opslaan";
+  document.getElementById("ronde-titel").textContent = bewerkt ? t("rondeBewerken", invoer.bewerkIndex+1) : t("nieuweRonde");
+  document.getElementById("btn-opslaan").textContent = bewerkt ? t("bijwerken") : t("opslaan");
   const balk=document.getElementById("bewerk-balk");
   balk.classList.toggle("toon", bewerkt);
-  if(bewerkt) document.getElementById("bewerk-tekst").textContent = "Je bewerkt ronde "+(invoer.bewerkIndex+1)+".";
+  if(bewerkt) document.getElementById("bewerk-tekst").textContent = t("bewerkJe", invoer.bewerkIndex+1);
 }
 
 /* ===== render: grafiek ===== */
@@ -467,7 +598,6 @@ function renderGrafiek(){
   const n=state.rondes.length;
   if(n<2){ kaart.classList.remove("toon"); return; }
   kaart.classList.add("toon");
-  // cumulatieve reeksen incl. startpunt 0
   const reeksen=[[0],[0],[0],[0]];
   const cum=[0,0,0,0];
   for(const r of state.rondes){ for(let i=0;i<4;i++){ cum[i]+=r.deltas[i]; reeksen[i].push(cum[i]); } }
@@ -476,7 +606,6 @@ function renderGrafiek(){
   const W=600,H=220,padL=40,padR=12,padT=14,padB=22;
   const x=i=>padL+(W-padL-padR)*(i/n);
   const y=v=>padT+(H-padT-padB)*(1-(v-lo)/(hi-lo));
-  // rasterlijnen: 0-lijn + boven/onder
   let svg=`<line x1="${padL}" y1="${y(0)}" x2="${W-padR}" y2="${y(0)}" stroke="#cdc3a9" stroke-width="1.2"/>`;
   svg+=`<text x="${padL-6}" y="${y(0)+4}" text-anchor="end" font-size="11" fill="#5b5648">0</text>`;
   for(const v of [hi,lo]){
@@ -499,30 +628,30 @@ function renderGrafiek(){
 /* ===== render: rondes ===== */
 function renderRondes(){
   const wrap=document.getElementById("rondes");
-  if(!state.rondes.length){ wrap.innerHTML=`<p class="rondes-leeg">Nog geen rondes gespeeld.</p>`; return; }
+  if(!state.rondes.length){ wrap.innerHTML=`<p class="rondes-leeg">${t("nogGeen")}</p>`; return; }
   wrap.innerHTML = state.rondes.map((r,idx)=>{
-    const c=C[r.contract]||{label:r.contract};
+    const type=C[r.contract]?C[r.contract].type:"";
     const namen=r.makers.map(i=>state.namen[i]).join(" & ");
     let detail;
-    if(c.type==="pas") detail="Iedereen paste — herdelen";
-    else if(GELUKT_TYPES.includes(c.type)) detail=`${esc(namen)} · ${r.gelukt?"gelukt":"niet gelukt"}`;
-    else if(c.type==="troel") detail=`${esc(namen)} · ${r.behaald} slagen`;
-    else detail=`${esc(namen)} · geboden ${r.bod}, behaald ${r.behaald}`;
+    if(type==="pas") detail=t("iedereenPaste");
+    else if(GELUKT_TYPES.includes(type)) detail=`${esc(namen)} · ${r.gelukt?t("geluktKlein"):t("nietGeluktKlein")}`;
+    else if(type==="troel") detail=`${esc(namen)} · ${t("slagen", r.behaald)}`;
+    else detail=`${esc(namen)} · ${t("gebodenBehaald", r.bod, r.behaald)}`;
     const delta=r.deltas.map(dl=>{const kl=dl>0?"p":(dl<0?"m":"");return `<span class="${kl}">${dl>0?"+":""}${dl}</span>`;}).join("&nbsp;/&nbsp;");
-    const knoppen = c.type==="pas"
-      ? `<button class="wis" data-idx="${idx}" aria-label="Verwijderen">✕</button>`
-      : `<button class="bew" data-bew="${idx}" aria-label="Wijzigen">✎</button><button class="wis" data-idx="${idx}" aria-label="Verwijderen">✕</button>`;
+    const knoppen = type==="pas"
+      ? `<button class="wis" data-idx="${idx}">✕</button>`
+      : `<button class="bew" data-bew="${idx}">✎</button><button class="wis" data-idx="${idx}">✕</button>`;
     return `<div class="ronde"><div class="nr">${idx+1}</div>
-      <div class="info"><div class="spel">${c.label}</div><div class="detail">${detail}</div></div>
+      <div class="info"><div class="spel">${cLabel(r.contract)}</div><div class="detail">${detail}</div></div>
       <div class="delta">${delta}</div>${knoppen}</div>`;
   }).reverse().join("");
   wrap.querySelectorAll(".wis").forEach(b=>b.onclick=()=>{
     const i=+b.dataset.idx;
-    bevestig("Ronde "+(i+1)+" verwijderen?", ()=>{
+    bevestig(t("verwijderVraag", i+1), ()=>{
       state.rondes.splice(i,1);
       if(invoer.bewerkIndex!=null) resetInvoer();
       bewaar(); renderAlles();
-    }, "Verwijderen");
+    }, t("verwijderen"));
   });
   wrap.querySelectorAll(".bew").forEach(b=>b.onclick=()=>bewerkRonde(+b.dataset.bew));
 }
@@ -532,15 +661,16 @@ function bewerkRonde(idx){
   renderAlles();
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function renderAlles(){ renderBord(); renderSpel(); renderSpelers(); renderBod(); renderBehaald(); renderModus(); renderPreview(); renderGrafiek(); renderRondes(); }
+function renderAlles(){ renderTaalTeksten(); renderBord(); renderSpel(); renderSpelers(); renderBod(); renderBehaald(); renderModus(); renderPreview(); renderGrafiek(); renderRondes(); }
 
 /* ===== instellingen ===== */
 function renderInstel(){
+  renderTaalKeuze();
   document.getElementById("namen").innerHTML = state.namen.map((n,i)=>
     `<div class="naamrij"><span class="stip" style="background:${KLEUREN[i]}"></span>
      <input type="text" data-i="${i}" value="${esc(n)}" maxlength="18"></div>`).join("");
   document.querySelectorAll("#namen input").forEach(inp=>inp.oninput=()=>{
-    state.namen[+inp.dataset.i]=inp.value||("Speler "+(+inp.dataset.i+1));
+    state.namen[+inp.dataset.i]=inp.value||(t("speler")+" "+(+inp.dataset.i+1));
     bewaar(); renderBord(); renderSpelers(); renderRondes(); renderPreview(); renderGrafiek(); renderDeler();
   });
   renderDeler();
@@ -549,6 +679,15 @@ function renderInstel(){
   setSchakel("sw-kleinemis", state.opties.kleinemis);
   setSchakel("sw-piccolo", state.opties.piccolo);
   setSchakel("sw-troel", state.opties.troel);
+}
+function renderTaalKeuze(){
+  const keuzes=[[null,t("taalAuto")],["nl","Nederlands"],["en","English"],["fr","Français"]];
+  document.getElementById("taal-keuze").innerHTML = keuzes.map(([v,lbl])=>
+    `<button class="chip ${state.taal===v?"aan":""}" data-t="${v===null?"auto":v}">${lbl}</button>`).join("");
+  document.querySelectorAll("#taal-keuze .chip").forEach(b=>b.onclick=()=>{
+    state.taal = b.dataset.t==="auto" ? null : b.dataset.t;
+    bewaar(); renderAlles(); renderInstel();
+  });
 }
 function renderDeler(){
   const d=huidigeDeler();
@@ -564,10 +703,11 @@ function setSchakel(id,aan){ document.getElementById(id).classList.toggle("aan",
 
 /* ===== delen ===== */
 function standAlsTekst(){
-  const t=totalen();
-  const volg=[0,1,2,3].sort((a,b)=>t[b]-t[a]);
-  let s="🃏 Kleurenwiezen — stand na "+state.rondes.length+" ronde"+(state.rondes.length===1?"":"s")+"\n";
-  volg.forEach((i,r)=>{ s+=(r+1)+". "+state.namen[i]+": "+(t[i]>0?"+":"")+t[i]+"\n"; });
+  const tt=totalen();
+  const volg=[0,1,2,3].sort((a,b)=>tt[b]-tt[a]);
+  const n=state.rondes.length;
+  let s="🃏 "+t("standNa", n, n===1?t("rondeWoord"):t("rondesWoord"))+"\n";
+  volg.forEach((i,r)=>{ s+=(r+1)+". "+state.namen[i]+": "+(tt[i]>0?"+":"")+tt[i]+"\n"; });
   return s.trim();
 }
 async function deelStand(){
@@ -575,10 +715,10 @@ async function deelStand(){
   if(navigator.share){
     try{ await navigator.share({text:tekst}); return; }catch(e){ if(e && e.name==="AbortError") return; }
   }
-  try{ await navigator.clipboard.writeText(tekst); toast("Stand gekopieerd naar klembord"); }
+  try{ await navigator.clipboard.writeText(tekst); toast(t("gekopieerd")); }
   catch(e){
     const ta=document.createElement("textarea"); ta.value=tekst; document.body.appendChild(ta);
-    ta.select(); try{ document.execCommand("copy"); toast("Stand gekopieerd naar klembord"); }catch(e2){ toast("Kopiëren mislukt"); }
+    ta.select(); try{ document.execCommand("copy"); toast(t("gekopieerd")); }catch(e2){ toast(t("kopieerFout")); }
     ta.remove();
   }
 }
@@ -625,16 +765,16 @@ document.querySelectorAll("#seg-alleen button").forEach(b=>b.onclick=()=>{
   };
 });
 document.getElementById("btn-nieuw-spel").onclick=()=>{
-  bevestig("Alle rondes en scores wissen? Namen en instellingen blijven behouden.", ()=>{
+  bevestig(t("wisVraag"), ()=>{
     state.rondes=[]; resetInvoer();
     bewaar(); overlay.classList.remove("open"); renderAlles(); window.scrollTo({top:0,behavior:"smooth"});
-  }, "Alles wissen");
+  }, t("wissen"));
 };
 
 let _confirmCb=null;
 function bevestig(tekst, onJa, jaLabel){
   document.getElementById("confirm-tekst").textContent=tekst;
-  document.getElementById("confirm-ja").textContent=jaLabel||"Bevestigen";
+  document.getElementById("confirm-ja").textContent=jaLabel||t("bevestigen");
   _confirmCb=onJa;
   document.getElementById("confirm-overlay").classList.add("open");
 }
