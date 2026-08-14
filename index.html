@@ -84,6 +84,11 @@
   .tweekeuze .chip.aan.ja{border-color:#1c6b3f;background:#1c6b3f}
   .tweekeuze .chip.aan.nee{border-color:var(--rood);background:var(--rood)}
 
+  .dubbel-balk{display:none;background:#fbf2d4;border:1px solid var(--goud);border-radius:11px;
+    padding:9px 13px;font-size:.83rem;color:#7a5e12;margin-bottom:14px}
+  .dubbel-balk.toon{display:block}
+  .dubbel-tag{display:inline-block;background:var(--goud);color:#3a2c05;border-radius:20px;padding:1px 8px;
+    font-size:.7rem;font-weight:700;vertical-align:1px}
   .bewerk-balk{display:none;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;
     background:#fbf2d4;border:1px solid var(--goud);border-radius:11px;padding:9px 13px;font-size:.83rem;color:#7a5e12}
   .bewerk-balk.toon{display:flex}
@@ -188,6 +193,7 @@
 <section class="kaart">
   <h2><span class="merk">♦</span> <span id="ronde-titel">Nieuwe ronde</span></h2>
 
+  <div class="dubbel-balk" id="dubbel-balk"></div>
   <label class="veld" id="lbl-welkspel">Welk spel?</label>
   <div class="chips" id="spel-keuze"></div>
 
@@ -337,6 +343,7 @@ nl: {
   standNa:"Kleurenwiezen — stand na {0} {1}", rondeWoord:"ronde", rondesWoord:"rondes",
   gekopieerd:"Stand gekopieerd naar klembord", kopieerFout:"Kopiëren mislukt", speler:"Speler",
   naamWijzigen:"Naam wijzigen", bewaren:"Bewaren", naamHint:"Tip: houd een speler ingedrukt om de naam te wijzigen.",
+  dubbelMelding:"Paswende: de punten van deze ronde tellen dubbel.", dubbelKort:"dubbel", herdeler:"Dezelfde speler deelt opnieuw.",
   contract:{
     vragen:["Vragen","samen"], alleen:["Alleen","solo"], kleinemis:["Kleine miserie","0 van 12"],
     piccolo:["Piccolo","net 1"], abondance:["Abondance","9-12"], troel:["Troel","samen"],
@@ -367,6 +374,7 @@ en: {
   standNa:"Colour Whist — standings after {0} {1}", rondeWoord:"round", rondesWoord:"rounds",
   gekopieerd:"Standings copied to clipboard", kopieerFout:"Copy failed", speler:"Player",
   naamWijzigen:"Change name", bewaren:"Save", naamHint:"Tip: press and hold a player to change the name.",
+  dubbelMelding:"Round of pass: the points of this round count double.", dubbelKort:"double", herdeler:"The same player deals again.",
   contract:{
     vragen:["Ask","together"], alleen:["Solo","alone"], kleinemis:["Small misery","0 of 12"],
     piccolo:["Piccolo","exactly 1"], abondance:["Abondance","9-12"], troel:["Trull","together"],
@@ -397,6 +405,7 @@ fr: {
   standNa:"Whist à la couleur — score après {0} {1}", rondeWoord:"donne", rondesWoord:"donnes",
   gekopieerd:"Score copié dans le presse-papiers", kopieerFout:"Échec de la copie", speler:"Joueur",
   naamWijzigen:"Modifier le nom", bewaren:"Enregistrer", naamHint:"Astuce : maintenez un joueur appuyé pour modifier son nom.",
+  dubbelMelding:"Tour de passe : les points de cette donne comptent double.", dubbelKort:"double", herdeler:"Le même joueur redistribue.",
   contract:{
     vragen:["Emballage","à deux"], alleen:["Solo","seul"], kleinemis:["Petite misère","0 sur 12"],
     piccolo:["Piccolo","juste 1"], abondance:["Abondance","9-12"], troel:["Trou","à deux"],
@@ -515,7 +524,17 @@ function deltas(contract, makers, bod, behaald, gelukt){
   return d;
 }
 function totalen(){ const t2=[0,0,0,0]; for(const r of state.rondes) for(let i=0;i<4;i++) t2[i]+=r.deltas[i]; return t2; }
-function huidigeDeler(){ return (state.startDeler + state.rondes.length) % 4; }
+function gespeeldeRondes(){ return state.rondes.filter(r=>r.contract!=="pas").length; }
+function huidigeDeler(){ return (state.startDeler + gespeeldeRondes()) % 4; }
+// Whisthub: na een paswende tellen de punten van de volgende ronde dubbel (niet cumulatief)
+function isDubbel(idx){ return idx>0 && state.rondes[idx-1].contract==="pas"; }
+function herbereken(){
+  state.rondes.forEach((r,idx)=>{
+    const basis=deltas(r.contract,r.makers,r.bod,r.behaald,r.gelukt);
+    r.dubbel=isDubbel(idx);
+    r.deltas=r.dubbel?basis.map(v=>v*2):basis;
+  });
+}
 function zichtbareContracten(){ return Object.keys(C).filter(k=>{ const o=C[k].optie; return !o || state.opties[o]; }); }
 
 /* ===== render: scorebord ===== */
@@ -658,9 +677,12 @@ function renderPreview(){
   if(!geldig()){ pv.classList.remove("toon"); btn.disabled=true; return; }
   btn.disabled=false;
   if(c.type==="pas"){ pv.classList.remove("toon"); return; }
-  const d=deltas(invoer.contract,invoer.makers,invoer.bod,invoer.behaald,invoer.gelukt);
+  let d=deltas(invoer.contract,invoer.makers,invoer.bod,invoer.behaald,invoer.gelukt);
+  const dub = invoer.bewerkIndex!=null ? isDubbel(invoer.bewerkIndex)
+            : (state.rondes.length>0 && state.rondes[state.rondes.length-1].contract==="pas");
+  if(dub) d=d.map(v=>v*2);
   pv.classList.add("toon");
-  pv.innerHTML = `<div class="kop">${t("puntenRonde")}</div>` + state.namen.map((n,i)=>{
+  pv.innerHTML = `<div class="kop">${t("puntenRonde")}${dub?` <span class="dubbel-tag">×2</span>`:""}</div>` + state.namen.map((n,i)=>{
     const kl=d[i]>0?"p":(d[i]<0?"m":"n");
     return `<div class="rij"><span>${esc(n)}</span><span class="${kl}">${d[i]>0?"+":""}${d[i]}</span></div>`;
   }).join("");
@@ -672,6 +694,11 @@ function renderModus(){
   const balk=document.getElementById("bewerk-balk");
   balk.classList.toggle("toon", bewerkt);
   if(bewerkt) document.getElementById("bewerk-tekst").textContent = t("bewerkJe", invoer.bewerkIndex+1);
+  const dub = bewerkt ? isDubbel(invoer.bewerkIndex)
+            : (state.rondes.length>0 && state.rondes[state.rondes.length-1].contract==="pas");
+  const db=document.getElementById("dubbel-balk");
+  db.classList.toggle("toon", dub);
+  if(dub) db.innerHTML = `<strong>×2</strong> &nbsp;${t("dubbelMelding")} ${t("herdeler")}`;
 }
 
 /* ===== render: grafiek ===== */
@@ -723,14 +750,16 @@ function renderRondes(){
     const knoppen = type==="pas"
       ? `<button class="wis" data-idx="${idx}">✕</button>`
       : `<button class="bew" data-bew="${idx}">✎</button><button class="wis" data-idx="${idx}">✕</button>`;
+    const dubTag = r.dubbel?` <span class="dubbel-tag">×2</span>`:"";
     return `<div class="ronde"><div class="nr">${idx+1}</div>
-      <div class="info"><div class="spel">${cLabel(r.contract)}</div><div class="detail">${detail}</div></div>
+      <div class="info"><div class="spel">${cLabel(r.contract)}${dubTag}</div><div class="detail">${detail}</div></div>
       <div class="delta">${delta}</div>${knoppen}</div>`;
   }).reverse().join("");
   wrap.querySelectorAll(".wis").forEach(b=>b.onclick=()=>{
     const i=+b.dataset.idx;
     bevestig(t("verwijderVraag", i+1), ()=>{
       state.rondes.splice(i,1);
+      herbereken();
       if(invoer.bewerkIndex!=null) resetInvoer();
       bewaar(); renderAlles();
     }, t("verwijderen"));
@@ -778,7 +807,7 @@ function renderDeler(){
     `<button class="chip ${i===d?"aan":""}" data-i="${i}">${esc(n)}</button>`).join("");
   document.querySelectorAll("#deler-keuze .chip").forEach(b=>b.onclick=()=>{
     const gewenst=+b.dataset.i;
-    state.startDeler=((gewenst - state.rondes.length) % 4 + 4) % 4;
+    state.startDeler=((gewenst - gespeeldeRondes()) % 4 + 4) % 4;
     bewaar(); renderDeler(); renderBord();
   });
 }
@@ -824,6 +853,7 @@ document.getElementById("btn-opslaan").onclick=()=>{
   const ronde={contract:invoer.contract, makers:[...invoer.makers], bod:invoer.bod, behaald:invoer.behaald, gelukt:invoer.gelukt, deltas:d};
   if(invoer.bewerkIndex!=null) state.rondes[invoer.bewerkIndex]=ronde;
   else state.rondes.push(ronde);
+  herbereken();
   resetInvoer();
   bewaar(); renderAlles(); window.scrollTo({top:0,behavior:"smooth"});
 };
@@ -886,6 +916,8 @@ if(!state.taalGekozen){
   document.getElementById("welkom-overlay").classList.add("open");
 }
 
+herbereken();
+bewaar();
 renderAlles();
 
 /* ===== service worker (offline + PWA-installatie) ===== */
