@@ -43,6 +43,8 @@
   .seat{position:relative;background:linear-gradient(165deg,var(--groen) 0%,#16402f 100%);
     border:1px solid var(--groen-rand);border-radius:16px;padding:13px 14px 12px;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
+  .seat{cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .seat.ingedrukt{transform:scale(.97);transition:transform .12s}
   .seat.leider{border-color:var(--goud);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(201,162,39,.35)}
   .seat .naam{font-size:.82rem;font-weight:600;color:var(--ivoor-zacht);display:flex;align-items:center;gap:6px;
     overflow:hidden;white-space:nowrap}
@@ -181,6 +183,7 @@
 </header>
 
 <section class="bord" id="bord"></section>
+<p class="voet" id="naam-hint" style="margin:-14px 0 20px"></p>
 
 <section class="kaart">
   <h2><span class="merk">♦</span> <span id="ronde-titel">Nieuwe ronde</span></h2>
@@ -281,6 +284,17 @@
   </div>
 </div>
 
+<div class="overlay midden" id="naam-overlay">
+  <div class="dialoog">
+    <p id="naam-titel" style="margin-bottom:12px"></p>
+    <input type="text" id="naam-invoer" maxlength="18">
+    <div class="knoppen" style="margin-top:16px">
+      <button id="naam-annuleer">Annuleren</button>
+      <button class="bevestig" id="naam-bewaar" style="background:var(--groen)">Bewaren</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay midden" id="welkom-overlay">
   <div class="dialoog welkom">
     <div class="welkom-suits"><span>♠</span><span class="goud">♥</span><span class="goud">♦</span><span>♣</span></div>
@@ -322,6 +336,7 @@ nl: {
   voet:"Werkt offline · scores blijven bewaard op dit toestel",
   standNa:"Kleurenwiezen — stand na {0} {1}", rondeWoord:"ronde", rondesWoord:"rondes",
   gekopieerd:"Stand gekopieerd naar klembord", kopieerFout:"Kopiëren mislukt", speler:"Speler",
+  naamWijzigen:"Naam wijzigen", bewaren:"Bewaren", naamHint:"Tip: houd een speler ingedrukt om de naam te wijzigen.",
   contract:{
     vragen:["Vragen","samen"], alleen:["Alleen","solo"], kleinemis:["Kleine miserie","0 van 12"],
     piccolo:["Piccolo","net 1"], abondance:["Abondance","9-12"], troel:["Troel","samen"],
@@ -351,6 +366,7 @@ en: {
   voet:"Works offline · scores are stored on this device",
   standNa:"Colour Whist — standings after {0} {1}", rondeWoord:"round", rondesWoord:"rounds",
   gekopieerd:"Standings copied to clipboard", kopieerFout:"Copy failed", speler:"Player",
+  naamWijzigen:"Change name", bewaren:"Save", naamHint:"Tip: press and hold a player to change the name.",
   contract:{
     vragen:["Ask","together"], alleen:["Solo","alone"], kleinemis:["Small misery","0 of 12"],
     piccolo:["Piccolo","exactly 1"], abondance:["Abondance","9-12"], troel:["Trull","together"],
@@ -380,6 +396,7 @@ fr: {
   voet:"Fonctionne hors ligne · les scores restent sur cet appareil",
   standNa:"Whist à la couleur — score après {0} {1}", rondeWoord:"donne", rondesWoord:"donnes",
   gekopieerd:"Score copié dans le presse-papiers", kopieerFout:"Échec de la copie", speler:"Joueur",
+  naamWijzigen:"Modifier le nom", bewaren:"Enregistrer", naamHint:"Astuce : maintenez un joueur appuyé pour modifier son nom.",
   contract:{
     vragen:["Emballage","à deux"], alleen:["Solo","seul"], kleinemis:["Petite misère","0 sur 12"],
     piccolo:["Piccolo","juste 1"], abondance:["Abondance","9-12"], troel:["Trou","à deux"],
@@ -470,6 +487,8 @@ function renderTaalTeksten(){
   zet("h-beheer", t("beheer")); zet("btn-deel2", t("deelKnop")); zet("btn-nieuw-spel", t("wisKnop"));
   zet("regels-vast", t("regelsVast"));
   zet("confirm-nee", t("annuleren"));
+  zet("naam-annuleer", t("annuleren")); zet("naam-bewaar", t("bewaren"));
+  zet("naam-hint", t("naamHint"));
 }
 
 /* ===== puntenmotor (Whisthub) ===== */
@@ -514,6 +533,47 @@ function renderBord(){
       <div class="score ${tt[i]<0?"neg":""}">${tt[i]>0?"+":""}${tt[i]}</div>
       ${i===deler?`<span class="deelt">${t("deelt")}</span>`:""}</div>`;
   }).join("");
+  koppelNaamWijziging();
+}
+
+/* ===== naam wijzigen via lang indrukken op het scorebord ===== */
+let drukTimer=null;
+function koppelNaamWijziging(){
+  document.querySelectorAll("#bord .seat").forEach((el,i)=>{
+    const start=()=>{
+      el.classList.add("ingedrukt");
+      clearTimeout(drukTimer);
+      drukTimer=setTimeout(()=>{
+        el.classList.remove("ingedrukt");
+        if(navigator.vibrate) navigator.vibrate(15);
+        opendNaamVenster(i);
+      },500);
+    };
+    const stop=()=>{ clearTimeout(drukTimer); el.classList.remove("ingedrukt"); };
+    el.addEventListener("pointerdown", start);
+    el.addEventListener("pointerup", stop);
+    el.addEventListener("pointerleave", stop);
+    el.addEventListener("pointercancel", stop);
+    el.addEventListener("contextmenu", e=>e.preventDefault());
+    el.addEventListener("dblclick", ()=>{ clearTimeout(drukTimer); opendNaamVenster(i); });
+  });
+}
+let naamIndex=null;
+function opendNaamVenster(i){
+  naamIndex=i;
+  document.getElementById("naam-titel").textContent=t("naamWijzigen");
+  const inp=document.getElementById("naam-invoer");
+  inp.value=state.namen[i];
+  document.getElementById("naam-overlay").classList.add("open");
+  setTimeout(()=>{ inp.focus(); inp.select(); },50);
+}
+function bewaarNaam(){
+  if(naamIndex==null) return;
+  const inp=document.getElementById("naam-invoer");
+  state.namen[naamIndex]=inp.value.trim()||(t("speler")+" "+(naamIndex+1));
+  naamIndex=null;
+  document.getElementById("naam-overlay").classList.remove("open");
+  bewaar(); renderAlles();
 }
 
 /* ===== render: invoer ===== */
@@ -793,6 +853,12 @@ document.getElementById("btn-nieuw-spel").onclick=()=>{
     bewaar(); overlay.classList.remove("open"); renderAlles(); window.scrollTo({top:0,behavior:"smooth"});
   }, t("wissen"));
 };
+
+document.getElementById("naam-bewaar").onclick=bewaarNaam;
+document.getElementById("naam-annuleer").onclick=()=>{ naamIndex=null; document.getElementById("naam-overlay").classList.remove("open"); };
+document.getElementById("naam-invoer").addEventListener("keydown", e=>{ if(e.key==="Enter") bewaarNaam(); });
+const naamOverlay=document.getElementById("naam-overlay");
+naamOverlay.onclick=e=>{ if(e.target===naamOverlay){ naamIndex=null; naamOverlay.classList.remove("open"); } };
 
 let _confirmCb=null;
 function bevestig(tekst, onJa, jaLabel){
